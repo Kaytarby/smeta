@@ -1,0 +1,551 @@
+{
+  "meta": {
+    "schemaVersion": 1,
+    "lastMondayRun": "2026-02-08T21:07:43.040Z"
+  },
+  "users": [
+    {
+      "id": "user_c451e64a-54e6-4eb1-950b-7356a8af3617",
+      "email": "admin@example.com",
+      "salt": "dd1590632d027271747e28da4c113867",
+      "hash": "0a97173a52e042fdd957167664c861e247eb6bc6be0771c6d684610c1d2b5f7d9229ac9bdfde53b932efa3f2237ced4208c5c4610b61364121c3f363e135b6a0",
+      "role": "admin",
+      "createdAt": "2026-02-07T21:43:55.256Z"
+    },
+    {
+      "id": "user_669cf94a-fd33-492d-984d-04af2d5e8c40",
+      "email": "kaytarby.88@mail.ru",
+      "salt": "265f754e3b82c3c1dca2b73eaf84ae59",
+      "hash": "e96a9136dda17ad9cbec9818c1020833b14c80afff6cc462fe7691a4e8c7552a0557bc7ffee38a7d94613b0c04139cb94b3227dcfaf4e8157d72d74b00e519d3",
+      "role": "admin",
+      "createdAt": "2026-02-07T21:46:14.045Z"
+    },
+    {
+      "id": "user_898c48b7-68d0-40d2-9cab-51960bc5f02d",
+      "email": "kaytarby.88@gmail.com",
+      "salt": "e48e15a2295293e73b7be1c11055351d",
+      "hash": "a44904769695e50e03628fef0fd28713107c2f806a6860dd0058a8661e2cae936ee4c62909ca021969e432309577c5c53d97f03f3a610914b2d59bb3f6fae080",
+      "role": "manager",
+      "createdAt": "2026-02-07T23:48:22.635Z"
+    }
+  ],
+  "articles": [
+    "Маркетинг",
+    "Производство",
+    "Семена",
+    "Удобрения"
+  ],
+  "counterparties": [
+    {
+      "name": "ООО Ромашка",
+      "inn": ""
+    },
+    {
+      "name": "ООО Вектор",
+      "inn": ""
+    },
+    {
+      "name": "ИП Иванов",
+      "inn": ""
+    },
+    {
+      "name": "АВС",
+      "inn": "1111111100"
+    },
+    {
+      "name": "ООО Ромашка3",
+      "inn": "3423232323"
+    },
+    {
+      "name": "Ромашка",
+      "inn": "0000000000"
+    },
+    {
+      "name": "Копыта",
+      "inn": "6666666666"
+    }
+  ],
+  "paymentTypes": [
+    "Аванс",
+    "Постоплата",
+    "Погашение кредиторской задолженности"
+  ],
+  "items": [
+    {
+      "id": "item_9c1c2a8b-6fa5-43cd-9fd2-ee2c1e4a4801",
+      "article": "Маркетинг",
+      "paymentType": "Аванс",
+      "kz": 2000,
+      "kzCrit": 1000,
+      "weeks": [
+        34,
+        234,
+        23,
+        3,
+        2,
+        3,
+        8,
+        8,
+        0,
+        0
+      ],
+      "status": "Утверждено",
+      "manager": "admin@example.com",
+      "createdAt": "2026-02-07T21:47:48.300Z",
+      "updatedAt": "2026-02-08T21:07:43.040Z",
+      "counterpartyName": "АВС",
+      "counterpartyInn": ""
+    },
+    {
+      "id": "item_4a7c4555-6546-4f50-bb6a-28090b1fc88d",
+      "article": "Маркетинг",
+      "paymentType": "Аванс",
+      "kz": 2000,
+      "kzCrit": 1000,
+      "weeks": [
+        34,
+        234,
+        23,
+        3,
+        2,
+        3,
+        8,
+        8,
+        0,
+        0
+      ],
+      "status": "Утверждено",
+      "manager": "admin@example.com",
+      "createdAt": "2026-02-07T21:48:47.354Z",
+      "updatedAt": "2026-02-08T21:07:43.040Z",
+      "counterpartyName": "ООО Вектор",
+      "counterpartyInn": ""
+    },
+    {
+      "id": "item_07a7733e-67b9-4e53-91dc-6969e572909c",
+      "article": "Операционные расходы",
+      "paymentType": "Аванс",
+      "kz": 2000,
+      "kzCrit": 1000,
+      "weeks": [
+        34,
+        600,
+        23,
+        7,
+        2,
+        3,
+        8,
+        8,
+        0,
+        0
+      ],
+      "status": "Утверждено",
+      "manager": "admin@example.com",
+      "createdAt": "2026-02-07T21:49:43.171Z",
+      "updatedAt": "2026-02-08T21:07:43.040Z",
+      "counterpartyName": "ООО Вектор",
+      "counterpartyInn": ""
+    },
+    {
+      "id": "item_c638da07-f0cd-4d92-8c8e-bbd271852d2f",
+      "article": "Маркетинг",
+      "paymentType": "Аванс",
+      "kz": 2000,
+      "kzCrit": 1000,
+      "weeks": [
+        34,
+        600,
+        23,
+        7,
+        2,
+        3,
+        8,
+        8,
+        0,
+        0
+      ],
+      "status": "Утверждено",
+      "manager": "admin@example.com",
+      "createdAt": "2026-02-07T23:42:38.979Z",
+      "updatedAt": "2026-02-08T21:07:43.040Z",
+      "counterpartyName": "ООО Вектор",
+      "counterpartyInn": ""
+    },
+    {
+      "id": "item_0b30f8fd-8591-4a60-9a65-fcc567abf185",
+      "article": "Семена",
+      "paymentType": "Постоплата",
+      "kz": 0,
+      "kzCrit": 0,
+      "weeks": [
+        2000,
+        3000,
+        4000,
+        10000,
+        30000,
+        19999,
+        399000,
+        3000,
+        10000,
+        0
+      ],
+      "status": "Утверждено",
+      "manager": "kaytarby.88@gmail.com",
+      "createdAt": "2026-02-07T23:50:15.424Z",
+      "updatedAt": "2026-02-08T21:07:43.040Z",
+      "counterpartyName": "ИП Иванов",
+      "counterpartyInn": ""
+    },
+    {
+      "id": "item_2c145a59-148e-47da-8ec8-f217b9b45e85",
+      "article": "Семена",
+      "paymentType": "Постоплата",
+      "kz": 0,
+      "kzCrit": 0,
+      "weeks": [
+        2000,
+        3000,
+        4000,
+        10000,
+        30000,
+        19999,
+        399000,
+        3000,
+        10000,
+        0
+      ],
+      "status": "Утверждено",
+      "manager": "kaytarby.88@mail.ru",
+      "createdAt": "2026-02-08T00:22:32.956Z",
+      "updatedAt": "2026-02-08T21:07:43.040Z",
+      "counterpartyName": "АВС",
+      "counterpartyInn": ""
+    },
+    {
+      "id": "item_bec65afa-8bdb-415b-ac0e-6da556ff2b31",
+      "article": "Семена",
+      "paymentType": "Постоплата",
+      "kz": 0,
+      "kzCrit": 0,
+      "weeks": [
+        0,
+        3000,
+        4000,
+        10000,
+        30000,
+        20000,
+        399000,
+        3000,
+        10000,
+        0
+      ],
+      "status": "Утверждено",
+      "manager": "kaytarby.88@gmail.com",
+      "createdAt": "2026-02-08T01:03:18.654Z",
+      "updatedAt": "2026-02-08T21:07:43.040Z",
+      "counterpartyName": "ООО Ромашка3",
+      "counterpartyInn": "3423232323"
+    },
+    {
+      "id": "item_1a472c65-b5c8-4dcb-8f8c-13a3561e465f",
+      "article": "Семена",
+      "paymentType": "Постоплата",
+      "kz": 0,
+      "kzCrit": 0,
+      "weeks": [
+        1000,
+        0,
+        0,
+        10000,
+        30000,
+        19999,
+        399000,
+        3000,
+        10000,
+        0
+      ],
+      "status": "Утверждено",
+      "manager": "admin@example.com",
+      "createdAt": "2026-02-08T01:18:42.148Z",
+      "updatedAt": "2026-02-08T21:07:43.040Z",
+      "counterpartyName": "АВС",
+      "counterpartyInn": "1111111100"
+    },
+    {
+      "id": "item_4bc73b54-4991-42aa-a52a-0a4e2b7f4ada",
+      "article": "Семена",
+      "paymentType": "Постоплата",
+      "kz": 0,
+      "kzCrit": 0,
+      "weeks": [
+        1000,
+        0,
+        0,
+        10000,
+        30000,
+        20000,
+        399000,
+        3000,
+        10000,
+        0
+      ],
+      "status": "Утверждено",
+      "manager": "admin@example.com",
+      "createdAt": "2026-02-08T08:02:06.926Z",
+      "updatedAt": "2026-02-08T21:07:43.040Z",
+      "counterpartyName": "ООО Ромашка3",
+      "counterpartyInn": "3423232323"
+    },
+    {
+      "id": "item_7dd0046f-e195-466a-8e69-8ff479a8d3d5",
+      "article": "Удобрения",
+      "paymentType": "Аванс",
+      "counterpartyName": "Копыта",
+      "counterpartyInn": "6666666666",
+      "kz": 0,
+      "kzCrit": 0,
+      "weeks": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "status": "Утверждено",
+      "manager": "admin@example.com",
+      "createdAt": "2026-02-08T08:09:50.791Z",
+      "updatedAt": "2026-02-08T21:07:43.040Z"
+    },
+    {
+      "id": "item_29d1bd5c-c0b4-45e2-bd65-3e62798e8d76",
+      "article": "Удобрения",
+      "paymentType": "Постоплата",
+      "counterpartyName": "Копыта",
+      "counterpartyInn": "6666666666",
+      "kz": 0,
+      "kzCrit": 0,
+      "weeks": [
+        0,
+        5000,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "status": "Утверждено",
+      "manager": "kaytarby.88@gmail.com",
+      "createdAt": "2026-02-08T08:13:40.060Z",
+      "updatedAt": "2026-02-08T21:07:43.040Z"
+    },
+    {
+      "id": "item_00ff8d88-a852-46c2-81cb-3c2f42b259e0",
+      "article": "Удобрения",
+      "paymentType": "Постоплата",
+      "counterpartyName": "Копыта",
+      "counterpartyInn": "6666666666",
+      "kz": 0,
+      "kzCrit": 0,
+      "weeks": [
+        0,
+        500,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "status": "Утверждено",
+      "manager": "kaytarby.88@gmail.com",
+      "createdAt": "2026-02-08T08:23:06.735Z",
+      "updatedAt": "2026-02-08T21:07:43.040Z"
+    }
+  ],
+  "archive": [
+    {
+      "archivedAt": "2026-02-07T23:44:31.593Z",
+      "article": "Маркетинг",
+      "paymentType": "Аванс",
+      "manager": "admin@example.com",
+      "amount": 34,
+      "counterpartyName": "АВС",
+      "counterpartyInn": ""
+    },
+    {
+      "archivedAt": "2026-02-07T23:44:31.593Z",
+      "article": "Маркетинг",
+      "paymentType": "Аванс",
+      "manager": "admin@example.com",
+      "amount": 34,
+      "counterpartyName": "ООО Вектор",
+      "counterpartyInn": ""
+    },
+    {
+      "archivedAt": "2026-02-07T23:44:31.593Z",
+      "article": "Операционные расходы",
+      "paymentType": "Аванс",
+      "manager": "admin@example.com",
+      "amount": 34,
+      "counterpartyName": "ООО Вектор",
+      "counterpartyInn": ""
+    },
+    {
+      "archivedAt": "2026-02-07T23:44:31.593Z",
+      "article": "Маркетинг",
+      "paymentType": "Аванс",
+      "manager": "admin@example.com",
+      "amount": 34,
+      "counterpartyName": "ИП Иванов",
+      "counterpartyInn": ""
+    },
+    {
+      "archivedAt": "2026-02-07T23:44:31.593Z",
+      "article": "Маркетинг",
+      "paymentType": "Аванс",
+      "manager": "admin@example.com",
+      "amount": 34,
+      "counterpartyName": "",
+      "counterpartyInn": ""
+    },
+    {
+      "archivedAt": "2026-02-08T21:07:43.040Z",
+      "article": "Маркетинг",
+      "paymentType": "Аванс",
+      "counterpartyName": "АВС",
+      "counterpartyInn": "",
+      "manager": "admin@example.com",
+      "amount": 21
+    },
+    {
+      "archivedAt": "2026-02-08T21:07:43.040Z",
+      "article": "Маркетинг",
+      "paymentType": "Аванс",
+      "counterpartyName": "ООО Вектор",
+      "counterpartyInn": "",
+      "manager": "admin@example.com",
+      "amount": 23
+    },
+    {
+      "archivedAt": "2026-02-08T21:07:43.040Z",
+      "article": "Операционные расходы",
+      "paymentType": "Аванс",
+      "counterpartyName": "ООО Вектор",
+      "counterpartyInn": "",
+      "manager": "admin@example.com",
+      "amount": 23
+    },
+    {
+      "archivedAt": "2026-02-08T21:07:43.040Z",
+      "article": "Маркетинг",
+      "paymentType": "Аванс",
+      "counterpartyName": "ООО Вектор",
+      "counterpartyInn": "",
+      "manager": "admin@example.com",
+      "amount": 23
+    },
+    {
+      "archivedAt": "2026-02-08T21:07:43.040Z",
+      "article": "Семена",
+      "paymentType": "Постоплата",
+      "counterpartyName": "ИП Иванов",
+      "counterpartyInn": "",
+      "manager": "kaytarby.88@gmail.com",
+      "amount": 1000
+    },
+    {
+      "archivedAt": "2026-02-08T21:07:43.040Z",
+      "article": "Семена",
+      "paymentType": "Постоплата",
+      "counterpartyName": "АВС",
+      "counterpartyInn": "",
+      "manager": "kaytarby.88@mail.ru",
+      "amount": 1000
+    },
+    {
+      "archivedAt": "2026-02-08T21:07:43.040Z",
+      "article": "Семена",
+      "paymentType": "Постоплата",
+      "counterpartyName": "АВС",
+      "counterpartyInn": "1111111100",
+      "manager": "admin@example.com",
+      "amount": 1000
+    },
+    {
+      "archivedAt": "2026-02-08T21:07:43.040Z",
+      "article": "Семена",
+      "paymentType": "Постоплата",
+      "counterpartyName": "ООО Ромашка3",
+      "counterpartyInn": "3423232323",
+      "manager": "admin@example.com",
+      "amount": 1000
+    },
+    {
+      "archivedAt": "2026-02-08T21:07:43.040Z",
+      "article": "Удобрения",
+      "paymentType": "Аванс",
+      "counterpartyName": "Копыта",
+      "counterpartyInn": "6666666666",
+      "manager": "admin@example.com",
+      "amount": 2000
+    }
+  ],
+  "limits": [
+    {
+      "article": "Семена",
+      "month": "2026-02",
+      "amount": 20000
+    },
+    {
+      "article": "Маркетинг",
+      "month": "2026-02",
+      "amount": 1000
+    },
+    {
+      "article": "Удобрения",
+      "month": "2026-02",
+      "amount": 10000
+    },
+    {
+      "article": "Семена",
+      "month": "2026-03",
+      "amount": 200000
+    }
+  ],
+  "importErrors": [
+    {
+      "id": "import_8abf22d2-731e-4296-928a-2ef0c6c7fc8e",
+      "createdAt": "2026-02-08T08:15:22.550Z",
+      "userEmail": "kaytarby.88@gmail.com",
+      "fileName": "Шаблон_импорт.xlsx",
+      "invalidCount": 1,
+      "totalRows": 1,
+      "rows": [
+        {
+          "rowIndex": 2,
+          "errors": {
+            "paymentType": "Тип платежа не найден",
+            "counterpartyInn": "ИНН должен быть 10 или 12 цифр",
+            "counterpartyName": "Контрагент не найден в базе"
+          },
+          "data": {
+            "article": "Семена",
+            "paymentType": "sd",
+            "counterpartyName": "АБС",
+            "counterpartyInn": "21233212"
+          }
+        }
+      ]
+    }
+  ]
+}

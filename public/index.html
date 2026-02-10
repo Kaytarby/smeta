@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Шахматка 10 недель</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="bg-orb"></div>
+    <div class="bg-orb orb-2"></div>
+    <div id="login" class="login">
+      <div class="login-card">
+        <div class="badge">Шахматка</div>
+        <h1>Планирование на 10 недель</h1>
+        <p>Десктоп‑веб альтернатива AppSheet: контроль сумм, роллинг, экспорт и доступ по ролям.</p>
+        <form id="loginForm" autocomplete="on">
+          <label>
+            Email
+            <input type="email" id="loginEmail" required />
+          </label>
+          <label>
+            Пароль
+            <input type="password" id="loginPassword" required />
+          </label>
+          <button type="submit">Войти</button>
+          <div id="loginError" class="error"></div>
+        </form>
+        <div class="login-hint">
+          Админ по умолчанию: <strong>admin@example.com</strong> / <strong>admin</strong>
+        </div>
+      </div>
+    </div>
+
+    <div id="app" class="app hidden">
+      <header class="topbar">
+        <div>
+          <div class="title">Шахматка 10 недель</div>
+          <div class="subtitle" id="weekSubtitle"></div>
+        </div>
+        <div class="user">
+          <span id="userEmail"></span>
+          <span id="userRole" class="role"></span>
+          <button id="logoutBtn" class="ghost">Выход</button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <section class="controls">
+          <div class="control-row">
+            <button id="newRowBtn">Новая строка</button>
+            <button id="importBtn" class="ghost">Загрузить из Excel</button>
+            <button id="exportBtn" class="ghost">Экспорт в Excel</button>
+            <button id="mondayBtn" class="ghost admin-only">Понедельник: запустить</button>
+          </div>
+          <div class="control-row meta">
+            <div>Последний ночной запуск: <span id="lastRun">—</span></div>
+            <div class="search">
+              <input id="searchInput" type="search" placeholder="Поиск по статье, контрагенту, менеджеру" />
+            </div>
+          </div>
+          <div class="control-row admin-only bulk-actions">
+            <div>Выбрано: <strong id="selectedCount">0</strong></div>
+            <select id="bulkStatus">
+              <option value="">Статус...</option>
+              <option value="Черновик">Черновик</option>
+              <option value="Отправлено">Отправлено</option>
+              <option value="Утверждено">Утверждено</option>
+            </select>
+            <button id="bulkSetStatus" class="ghost">Применить статус</button>
+            <input id="bulkManager" type="email" placeholder="Менеджер email" />
+            <button id="bulkSetManager" class="ghost">Назначить менеджера</button>
+            <button id="bulkDelete" class="ghost danger">Удалить выбранные</button>
+            <button id="bulkClear" class="ghost">Снять выбор</button>
+          </div>
+        </section>
+
+        <section class="table-section">
+          <div id="table" class="table"></div>
+        </section>
+
+        <section class="report-section">
+          <div class="panel">
+            <div class="report-header">
+              <h2>Отчёт по лимитам</h2>
+              <div class="report-controls">
+                <input type="month" id="reportMonth" />
+                <button id="reportRefresh" class="ghost">Обновить</button>
+              </div>
+            </div>
+            <div id="reportSummary" class="status"></div>
+            <div id="reportTable" class="report-table"></div>
+          </div>
+        </section>
+
+        <section class="errors-section">
+          <div class="panel">
+            <div class="report-header">
+              <h2>Журнал ошибок импорта</h2>
+              <button id="clearImportErrors" class="ghost">Очистить</button>
+            </div>
+            <div id="importErrorList" class="list"></div>
+          </div>
+        </section>
+
+        <section class="admin-section admin-only">
+          <div class="panel">
+            <h2>Администрирование</h2>
+            <div class="panel-grid">
+              <form id="addUserForm">
+                <h3>Добавить пользователя</h3>
+                <label>Email
+                  <input type="email" id="newUserEmail" required />
+                </label>
+                <label>Пароль
+                  <input type="text" id="newUserPassword" required />
+                </label>
+                <label>Роль
+                  <select id="newUserRole">
+                    <option value="manager">manager</option>
+                    <option value="admin">admin</option>
+                  </select>
+                </label>
+                <button type="submit" class="ghost">Создать</button>
+                <div id="userCreateStatus" class="status"></div>
+              </form>
+
+              <form id="addArticleForm">
+                <h3>Добавить статью</h3>
+                <label>Статья
+                  <input type="text" id="newArticle" required />
+                </label>
+                <button type="submit" class="ghost">Добавить</button>
+                <div id="articleStatus" class="status"></div>
+              </form>
+
+              <form id="addCounterpartyForm">
+                <h3>Добавить контрагента</h3>
+                <label>Контрагент
+                  <input type="text" id="newCounterparty" />
+                </label>
+                <label>ИНН
+                  <input type="text" id="newCounterpartyInn" />
+                </label>
+                <label>Список (по одному в строке)
+                  <textarea id="newCounterpartyList" rows="3" placeholder="ООО Ромашка;7701000000&#10;ООО Вектор;7702000000"></textarea>
+                </label>
+                <button type="submit" class="ghost">Добавить</button>
+                <div id="counterpartyStatus" class="status"></div>
+              </form>
+
+              <form id="limitForm">
+                <h3>Лимиты по статьям</h3>
+                <label>Статья
+                  <input type="text" id="limitArticle" list="articleList" />
+                </label>
+                <label>Месяц
+                  <input type="month" id="limitMonth" />
+                </label>
+                <label>Лимит
+                  <input type="number" id="limitAmount" />
+                </label>
+                <label>Список (Статья;Месяц;Сумма)
+                  <textarea id="limitList" rows="3" placeholder="Маркетинг;2026-02;500000"></textarea>
+                </label>
+                <button type="submit" class="ghost">Сохранить</button>
+                <div id="limitStatus" class="status"></div>
+              </form>
+            </div>
+
+            <div class="panel-grid lists">
+              <div class="list-card">
+                <h3>Статьи</h3>
+                <div id="articleAdminList" class="list"></div>
+              </div>
+              <div class="list-card">
+                <h3>Контрагенты</h3>
+                <div id="counterpartyAdminList" class="list"></div>
+              </div>
+              <div class="list-card">
+                <h3>Пользователи</h3>
+                <div id="userAdminList" class="list"></div>
+              </div>
+              <div class="list-card">
+                <h3>Лимиты</h3>
+                <div id="limitAdminList" class="list"></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <div id="drawer" class="drawer hidden">
+        <div class="drawer-header">
+          <h2 id="drawerTitle">Строка</h2>
+          <button id="drawerClose" class="ghost">Закрыть</button>
+        </div>
+        <form id="editorForm" class="drawer-form">
+          <label>Статья
+            <input type="text" id="editArticle" list="articleList" required />
+          </label>
+          <label>Тип платежа
+            <input type="text" id="editPaymentType" list="paymentTypeList" required />
+          </label>
+          <label>Контрагент
+            <input type="text" id="editCounterpartyName" autocomplete="off" required />
+          </label>
+          <label>ИНН
+            <input type="text" id="editCounterpartyInn" autocomplete="off" required />
+          </label>
+          <div id="counterpartySuggest" class="suggest hidden"></div>
+          <button type="button" id="saveCounterpartyBtn" class="ghost">Сохранить контрагента</button>
+          <div class="inline">
+            <label>КЗ
+              <input type="number" id="editKz" />
+            </label>
+            <label>КЗ_Крит
+              <input type="number" id="editKzCrit" />
+            </label>
+          </div>
+          <div class="budget-card" id="budgetCard">
+            <div class="budget-row">
+              <strong id="budgetTitle">Бюджет</strong>
+              <span id="budgetPercent">0%</span>
+            </div>
+            <div class="progress">
+              <div class="progress-fill" id="budgetFill"></div>
+            </div>
+            <div class="budget-row">
+              <span>Использовано: <strong id="budgetUsed">0</strong></span>
+              <span>Осталось: <strong id="budgetRemaining">0</strong></span>
+            </div>
+          </div>
+          <div class="weeks" id="editWeeks"></div>
+          <label>Статус
+            <select id="editStatus">
+              <option value="Черновик">Черновик</option>
+              <option value="Отправлено">Отправлено</option>
+              <option value="Утверждено">Утверждено</option>
+            </select>
+          </label>
+          <label>Менеджер
+            <input type="email" id="editManager" />
+          </label>
+          <div class="drawer-actions">
+            <button type="submit">Сохранить</button>
+            <button type="button" id="drawerCancel" class="ghost">Отмена</button>
+          </div>
+          <div id="editorStatus" class="status"></div>
+        </form>
+      </div>
+    </div>
+
+    <datalist id="articleList"></datalist>
+    <datalist id="paymentTypeList"></datalist>
+    <datalist id="counterpartyList"></datalist>
+
+    <div id="importModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Импорт из Excel</h2>
+          <button id="importClose" class="ghost">Закрыть</button>
+        </div>
+        <p class="modal-text">
+          Скачайте шаблон: <a href="/api/template" target="_blank" rel="noopener">Excel‑шаблон</a>
+        </p>
+        <div id="dropZone" class="dropzone">
+          Перетащите файл сюда или нажмите «Выбрать файл»
+        </div>
+        <div class="modal-actions">
+          <input type="file" id="importFile" accept=".xlsx,.xls" hidden />
+          <button id="importBrowse" class="ghost">Выбрать файл</button>
+          <button id="importCommit" disabled>Импортировать</button>
+          <button id="importCancel" class="ghost">Отмена</button>
+        </div>
+        <div id="importStatus" class="status"></div>
+        <div id="importPreview" class="import-preview"></div>
+      </div>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
