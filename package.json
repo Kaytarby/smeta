@@ -1,8 +1,8 @@
 {
-  "name": "chessboard-budget",
+  "name": "operplan",
   "version": "1.0.0",
   "private": true,
-  "description": "Desktop web app alternative to AppSheet for 10-week rolling budget (Шахматка).",
+  "description": "Desktop web app alternative to AppSheet for 10-week rolling budget (Оперплан).",
   "type": "module",
   "scripts": {
     "start": "node server.js",
