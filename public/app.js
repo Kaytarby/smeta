@@ -724,6 +724,11 @@ function renderTable() {
     tableEl.appendChild(cell);
   });
 
+  // Add state to track expanded groups (initialize if not exists)
+  if (!state.expandedGroups) {
+    state.expandedGroups = new Set();
+  }
+
   const groups = [];
   for (const item of items) {
     const key = `${item.article}|||${item.paymentType}`;
@@ -734,7 +739,8 @@ function renderTable() {
         article: item.article,
         paymentType: item.paymentType,
         totals: Array(WEEK_COUNT).fill(0),
-        rows: []
+        rows: [],
+        isExpanded: state.expandedGroups.has(key)
       };
       groups.push(group);
     }
@@ -749,12 +755,38 @@ function renderTable() {
   const weekEndIndex = weekStartIndex + WEEK_COUNT;
 
   groups.forEach((group) => {
+    // Create group header row
     for (let i = 0; i < headers.length; i += 1) {
       const cell = document.createElement("div");
       cell.className = "cell group";
+      
       if (i === groupLabelIndex) {
-        cell.textContent = `${group.article} / ${group.paymentType}`;
+        // Add expand/collapse button for admin users
+        if (isAdmin) {
+          const expandBtn = document.createElement("button");
+          expandBtn.className = "expand-btn";
+          expandBtn.textContent = group.isExpanded ? "▼" : "►";
+          expandBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const key = group.key;
+            if (state.expandedGroups.has(key)) {
+              state.expandedGroups.delete(key);
+            } else {
+              state.expandedGroups.add(key);
+            }
+            renderTable();
+          });
+          
+          const labelSpan = document.createElement("span");
+          labelSpan.textContent = `${group.article} / ${group.paymentType}`;
+          
+          cell.appendChild(expandBtn);
+          cell.appendChild(labelSpan);
+        } else {
+          cell.textContent = `${group.article} / ${group.paymentType}`;
+        }
       }
+      
       if (i >= weekStartIndex && i < weekEndIndex) {
         const total = group.totals[i - weekStartIndex];
         cell.textContent = formatNumber(total);
@@ -762,7 +794,9 @@ function renderTable() {
       tableEl.appendChild(cell);
     }
 
-    group.rows.forEach((item) => {
+    // Show child rows only if group is expanded (or if not admin view)
+    if (group.isExpanded || !isAdmin) {
+      group.rows.forEach((item) => {
       const isDebt = item.paymentType === "Погашение кредиторской задолженности";
 
       if (isAdmin) {
