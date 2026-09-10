@@ -14,7 +14,9 @@ const state = {
   search: "",
   editing: null,
   selectedIds: new Set(),
-  import: { data: null, rows: [], fileName: "" }
+  import: { data: null, rows: [], fileName: "" },
+  collapsed: new Set(),
+  runtime: null
 };
 
 const el = (id) => document.getElementById(id);
@@ -115,6 +117,11 @@ const reportSummary = el("reportSummary");
 const reportTable = el("reportTable");
 const importErrorList = el("importErrorList");
 const clearImportErrors = el("clearImportErrors");
+const hostBanner = el("hostBanner");
+const lastBackup = el("lastBackup");
+const backupBtn = el("backupBtn");
+const collapseAllBtn = el("collapseAllBtn");
+const expandAllBtn = el("expandAllBtn");
 
 function showLogin() {
   loginView.classList.remove("hidden");
@@ -310,19 +317,15 @@ function updateCounterpartySuggestions() {
   const nameValue = editCounterpartyName.value.trim().toLowerCase();
   const innValue = editCounterpartyInn.value.trim();
   const query = nameValue || innValue;
-  if (!query) {
-    counterpartySuggest.classList.add("hidden");
-    counterpartySuggest.innerHTML = "";
-    return;
-  }
   const matches = state.refs.counterparties
     .filter((cp) => {
+      if (!query) return true;
       return (
-        cp.name.toLowerCase().includes(nameValue || "") ||
-        cp.inn.includes(innValue || "")
+        cp.name.toLowerCase().includes(nameValue || query) ||
+        cp.inn.includes(innValue || query)
       );
     })
-    .slice(0, 5);
+    .slice(0, 8);
   if (matches.length === 0) {
     counterpartySuggest.classList.add("hidden");
     counterpartySuggest.innerHTML = "";
@@ -665,27 +668,13 @@ function canEditField(item, field) {
   return true;
 }
 
-function renderTable() {
-  tableEl.innerHTML = "";
-  const isAdmin = state.user?.role === "admin";
-  const baseHeaders = [
-    "Контрагент",
-    "КЗ",
-    "КЗ_Крит",
-    ...weekLabels(),
-    "Статус",
-    "Менеджер",
-    "Действия"
-  ];
-  const headers = isAdmin ? ["", ...baseHeaders] : baseHeaders;
-  if (isAdmin) {
-    tableEl.style.gridTemplateColumns = `44px ${"minmax(120px, auto) ".repeat(headers.length - 1)}`.trim();
-  } else {
-    tableEl.style.gridTemplateColumns = `repeat(${headers.length}, minmax(120px, auto))`;
-  }
+function groupKeyOf(item) {
+  return `${item.article}|||${item.paymentType}`;
+}
 
+function visibleItems() {
   const search = state.search.trim().toLowerCase();
-  const items = state.items
+  return state.items
     .map((item) => ({ ...item, weeks: normalizeWeeks(item.weeks) }))
     .filter((item) => {
       if (!search) return true;
@@ -697,36 +686,184 @@ function renderTable() {
       if (a.article === b.article) return a.paymentType.localeCompare(b.paymentType);
       return a.article.localeCompare(b.article);
     });
+}
 
+function setWeekCellText(td, value) {
+  td.textContent = formatNumber(value);
+}
+
+function updateGroupTotalCell(key, idx, delta) {
+  const cell = tableEl.querySelector(`[data-group-total="${CSS.escape(key)}:${idx}"]`);
+  if (!cell) return;
+  const current = parseNumber(cell.dataset.raw || "0") + delta;
+  cell.dataset.raw = String(current);
+  cell.textContent = formatNumber(current);
+}
+
+async function saveWeekValue(item, idx, value) {
+  const weeks = normalizeWeeks(item.weeks);
+  const prev = weeks[idx];
+  if (prev === value) return;
+  weeks[idx] = value;
+  try {
+    const response = await api(`/api/items/${item.id}`, {
+      method: "PUT",
+      body: JSON.stringify({ weeks })
+    });
+    const old = item.weeks[idx] || 0;
+    updateLocalItem(response.item);
+    const local = state.items.find((row) => row.id === item.id);
+    if (local) local.weeks = normalizeWeeks(response.item.weeks);
+    updateGroupTotalCell(groupKeyOf(item), idx, value - old);
+    refreshBudgetUsage();
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+function focusWeekCell(itemId, idx) {
+  const td = Array.from(tableEl.querySelectorAll("td.week")).find(
+    (node) => node.dataset.id === itemId && node.dataset.idx === String(idx)
+  );
+  if (td) startWeekEdit(td);
+}
+
+function startWeekEdit(td) {
+  if (!td || td.dataset.locked === "1" || td.querySelector("input")) return;
+  const item = state.items.find((row) => row.id === td.dataset.id);
+  if (!item) return;
+  const idx = Number(td.dataset.idx);
+  const current = normalizeWeeks(item.weeks)[idx] || 0;
+  td.classList.add("editing");
+  const input = document.createElement("input");
+  input.type = "number";
+  input.value = current ? String(current) : "";
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      input.blur();
+      focusWeekCell(item.id, Math.min(WEEK_COUNT - 1, idx + 1));
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      td.dataset.cancel = "1";
+      input.blur();
+    } else if (event.key === "ArrowRight" && input.selectionEnd === input.value.length) {
+      event.preventDefault();
+      input.blur();
+      focusWeekCell(item.id, Math.min(WEEK_COUNT - 1, idx + 1));
+    } else if (event.key === "ArrowLeft" && input.selectionStart === 0) {
+      event.preventDefault();
+      input.blur();
+      focusWeekCell(item.id, Math.max(0, idx - 1));
+    } else if (event.key === "ArrowDown") {
+      event.preventDefault();
+      const next = td.parentElement?.nextElementSibling?.querySelector(`td.week[data-idx="${idx}"]`);
+      input.blur();
+      if (next) startWeekEdit(next);
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      const prevRow = td.parentElement?.previousElementSibling?.querySelector(`td.week[data-idx="${idx}"]`);
+      input.blur();
+      if (prevRow) startWeekEdit(prevRow);
+    }
+  });
+  input.addEventListener("blur", async () => {
+    const cancel = td.dataset.cancel === "1";
+    delete td.dataset.cancel;
+    td.classList.remove("editing");
+    const value = cancel ? current : parseNumber(input.value);
+    td.innerHTML = "";
+    setWeekCellText(td, value);
+    if (!cancel) await saveWeekValue(item, idx, value);
+  });
+  td.innerHTML = "";
+  td.appendChild(input);
+  input.focus();
+  input.select();
+}
+
+function renderHostBanner() {
+  if (!hostBanner) return;
+  const info = state.runtime;
+  if (!info) {
+    hostBanner.classList.add("hidden");
+    return;
+  }
+  hostBanner.classList.remove("hidden");
+  const urls = (info.urls || []).filter((url) => !url.includes("127.0.0.1"));
+  const share = urls[0] || (info.urls || [])[0] || "";
+  hostBanner.innerHTML = "";
+  const text = document.createElement("div");
+  text.innerHTML = `<strong>Общая база на этом компьютере (${info.hostName || "хост"}).</strong> Пока ноутбук выключен, коллеги не зайдут. Откройте в браузере в той же Wi‑Fi/сети: `;
+  if (share) {
+    const code = document.createElement("code");
+    code.textContent = share;
+    text.appendChild(code);
+  }
+  const actions = document.createElement("div");
+  actions.className = "host-urls";
+  if (share) {
+    const copy = document.createElement("button");
+    copy.className = "ghost";
+    copy.type = "button";
+    copy.textContent = "Копировать адрес";
+    copy.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(share);
+        copy.textContent = "Скопировано";
+        setTimeout(() => (copy.textContent = "Копировать адрес"), 1500);
+      } catch {
+        prompt("Скопируйте адрес для коллег:", share);
+      }
+    });
+    actions.appendChild(copy);
+  }
+  hostBanner.appendChild(text);
+  hostBanner.appendChild(actions);
+}
+
+function renderTable() {
+  const isAdmin = state.user?.role === "admin";
+  tableEl.className = isAdmin ? "plan-table with-check" : "plan-table";
+  tableEl.innerHTML = "";
+
+  const labels = weekLabels();
+  const items = visibleItems();
   const visibleIds = items.map((item) => item.id);
   const allSelected = visibleIds.length > 0 && visibleIds.every((id) => state.selectedIds.has(id));
 
-  headers.forEach((label, idx) => {
-    const cell = document.createElement("div");
-    cell.className = "cell header";
+  const thead = document.createElement("thead");
+  const headRow = document.createElement("tr");
+  const headers = [];
+  if (isAdmin) headers.push({ label: "", cls: "sticky-check" });
+  headers.push({ label: "Контрагент", cls: "sticky-cp" });
+  headers.push({ label: "КЗ" }, { label: "КЗ_Крит" });
+  labels.forEach((label) => headers.push({ label }));
+  headers.push({ label: "Статус" }, { label: "Менеджер" }, { label: "Действия" });
+  headers.forEach((h, idx) => {
+    const th = document.createElement("th");
+    if (h.cls) th.className = h.cls;
     if (isAdmin && idx === 0) {
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.checked = allSelected;
       checkbox.addEventListener("change", () => {
-        if (checkbox.checked) {
-          visibleIds.forEach((id) => state.selectedIds.add(id));
-        } else {
-          visibleIds.forEach((id) => state.selectedIds.delete(id));
-        }
+        if (checkbox.checked) visibleIds.forEach((id) => state.selectedIds.add(id));
+        else visibleIds.forEach((id) => state.selectedIds.delete(id));
         renderTable();
       });
-      cell.classList.add("checkbox");
-      cell.appendChild(checkbox);
+      th.appendChild(checkbox);
     } else {
-      cell.textContent = label;
+      th.textContent = h.label;
     }
-    tableEl.appendChild(cell);
+    headRow.appendChild(th);
   });
+  thead.appendChild(headRow);
+  tableEl.appendChild(thead);
 
   const groups = [];
   for (const item of items) {
-    const key = `${item.article}|||${item.paymentType}`;
+    const key = groupKeyOf(item);
     let group = groups.find((g) => g.key === key);
     if (!group) {
       group = {
@@ -744,107 +881,117 @@ function renderTable() {
     });
   }
 
-  const groupLabelIndex = isAdmin ? 1 : 0;
-  const weekStartIndex = (isAdmin ? 1 : 0) + 3;
-  const weekEndIndex = weekStartIndex + WEEK_COUNT;
+  const tbody = document.createElement("tbody");
+  const colCount = headers.length;
 
   groups.forEach((group) => {
-    for (let i = 0; i < headers.length; i += 1) {
-      const cell = document.createElement("div");
-      cell.className = "cell group";
-      if (i === groupLabelIndex) {
-        cell.textContent = `${group.article} / ${group.paymentType}`;
+    const collapsed = state.collapsed.has(group.key);
+    const groupRow = document.createElement("tr");
+    groupRow.className = "group";
+    groupRow.addEventListener("click", () => {
+      if (state.collapsed.has(group.key)) state.collapsed.delete(group.key);
+      else state.collapsed.add(group.key);
+      renderTable();
+    });
+    const mark = collapsed ? "▸" : "▾";
+    for (let i = 0; i < colCount; i += 1) {
+      const td = document.createElement("td");
+      if (isAdmin && i === 0) td.className = "sticky-check";
+      const cpIndex = isAdmin ? 1 : 0;
+      const weekStart = cpIndex + 3;
+      if (i === cpIndex) {
+        td.classList.add("sticky-cp");
+        td.textContent = `${mark} ${group.article} / ${group.paymentType}`;
       }
-      if (i >= weekStartIndex && i < weekEndIndex) {
-        const total = group.totals[i - weekStartIndex];
-        cell.textContent = formatNumber(total);
+      if (i >= weekStart && i < weekStart + WEEK_COUNT) {
+        const idx = i - weekStart;
+        td.dataset.groupTotal = `${group.key}:${idx}`;
+        td.dataset.raw = String(group.totals[idx]);
+        td.textContent = formatNumber(group.totals[idx]);
       }
-      tableEl.appendChild(cell);
+      groupRow.appendChild(td);
     }
+    tbody.appendChild(groupRow);
+    if (collapsed) return;
 
     group.rows.forEach((item) => {
       const isDebt = item.paymentType === "Погашение кредиторской задолженности";
+      const tr = document.createElement("tr");
+      tr.dataset.id = item.id;
 
       if (isAdmin) {
-        const selectCell = document.createElement("div");
-        selectCell.className = "cell checkbox";
+        const selectCell = document.createElement("td");
+        selectCell.className = "sticky-check";
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.checked = state.selectedIds.has(item.id);
+        checkbox.addEventListener("click", (event) => event.stopPropagation());
         checkbox.addEventListener("change", () => {
           if (checkbox.checked) state.selectedIds.add(item.id);
           else state.selectedIds.delete(item.id);
-          renderTable();
+          updateSelectionUI();
         });
         selectCell.appendChild(checkbox);
-        tableEl.appendChild(selectCell);
+        tr.appendChild(selectCell);
       }
 
-      const counterpartyCell = document.createElement("div");
-      counterpartyCell.className = "cell";
+      const counterpartyCell = document.createElement("td");
+      counterpartyCell.className = "sticky-cp";
       if (item.status === "Черновик") counterpartyCell.classList.add("status-draft");
-      counterpartyCell.textContent = item.counterpartyName || "";
+      const name = document.createElement("div");
+      name.textContent = item.counterpartyName || "—";
+      counterpartyCell.appendChild(name);
+      if (item.counterpartyInn) {
+        const inn = document.createElement("span");
+        inn.className = "cp-inn";
+        inn.textContent = `ИНН ${item.counterpartyInn}`;
+        counterpartyCell.appendChild(inn);
+      }
       counterpartyCell.addEventListener("click", () => openDrawer(item));
-      tableEl.appendChild(counterpartyCell);
+      tr.appendChild(counterpartyCell);
 
-      const kzCell = document.createElement("div");
-      kzCell.className = "cell";
+      const kzCell = document.createElement("td");
       if (isDebt) kzCell.classList.add("debt");
       kzCell.textContent = formatNumber(item.kz);
-      tableEl.appendChild(kzCell);
+      tr.appendChild(kzCell);
 
-      const kzCritCell = document.createElement("div");
-      kzCritCell.className = "cell";
+      const kzCritCell = document.createElement("td");
       if (isDebt) kzCritCell.classList.add("debt");
       kzCritCell.textContent = formatNumber(item.kzCrit);
-      tableEl.appendChild(kzCritCell);
+      tr.appendChild(kzCritCell);
 
+      const locked = !canEditField(item, "weeks");
       item.weeks.forEach((value, idx) => {
-        const cell = document.createElement("div");
-        cell.className = "cell";
-        if (isDebt) cell.classList.add("debt");
-        const input = document.createElement("input");
-        input.type = "number";
-        input.value = value ? value : "";
-        input.disabled = !canEditField(item, "weeks");
-        input.addEventListener("blur", async () => {
-          const weeks = normalizeWeeks(item.weeks);
-          weeks[idx] = parseNumber(input.value);
-          try {
-            const response = await api(`/api/items/${item.id}`, {
-              method: "PUT",
-              body: JSON.stringify({ weeks })
-            });
-            updateLocalItem(response.item);
-            await refreshBudgetUsage();
-            renderTable();
-          } catch (err) {
-            console.error(err);
-          }
-        });
-        cell.appendChild(input);
-        tableEl.appendChild(cell);
+        const td = document.createElement("td");
+        td.className = "week";
+        if (isDebt) td.classList.add("debt");
+        td.dataset.id = item.id;
+        td.dataset.idx = String(idx);
+        td.tabIndex = locked ? -1 : 0;
+        if (locked) td.dataset.locked = "1";
+        setWeekCellText(td, value);
+        if (!locked) {
+          td.addEventListener("click", () => startWeekEdit(td));
+          td.addEventListener("focus", () => startWeekEdit(td));
+        }
+        tr.appendChild(td);
       });
 
-      const statusCell = document.createElement("div");
-      statusCell.className = "cell";
+      const statusCell = document.createElement("td");
       if (item.status === "Черновик") statusCell.classList.add("status-draft");
       statusCell.textContent = item.status;
-      tableEl.appendChild(statusCell);
+      tr.appendChild(statusCell);
 
-      const managerCell = document.createElement("div");
-      managerCell.className = "cell";
+      const managerCell = document.createElement("td");
       managerCell.textContent = item.manager;
-      tableEl.appendChild(managerCell);
+      tr.appendChild(managerCell);
 
-      const actionsCell = document.createElement("div");
-      actionsCell.className = "cell actions";
-
+      const actionsCell = document.createElement("td");
+      actionsCell.className = "actions";
       const editBtn = document.createElement("button");
       editBtn.className = "ghost";
       editBtn.textContent = "Правка";
       editBtn.addEventListener("click", () => openDrawer(item));
-
       const copyBtn = document.createElement("button");
       copyBtn.className = "ghost";
       copyBtn.textContent = "Копировать";
@@ -858,13 +1005,14 @@ function renderTable() {
           console.error(err);
         }
       });
-
       actionsCell.appendChild(editBtn);
       actionsCell.appendChild(copyBtn);
-      tableEl.appendChild(actionsCell);
+      tr.appendChild(actionsCell);
+      tbody.appendChild(tr);
     });
   });
 
+  tableEl.appendChild(tbody);
   updateSelectionUI();
 }
 
@@ -975,6 +1123,15 @@ async function bootstrap() {
     const labels = weekLabels();
     weekSubtitle.textContent = `Текущий диапазон: ${labels[0]} — ${labels[labels.length - 1]}`;
     lastRun.textContent = state.meta.lastMondayRun ? new Date(state.meta.lastMondayRun).toLocaleString("ru-RU") : "—";
+    if (lastBackup) {
+      lastBackup.textContent = state.meta.lastBackup ? new Date(state.meta.lastBackup).toLocaleString("ru-RU") : "—";
+    }
+    try {
+      state.runtime = await api("/api/runtime");
+    } catch {
+      state.runtime = null;
+    }
+    renderHostBanner();
     setAdminVisibility();
     renderDatalists();
     renderAdminLists();
@@ -1013,6 +1170,28 @@ mondayBtn.addEventListener("click", async () => {
     mondayBtn.disabled = false;
     mondayBtn.textContent = "Понедельник: запустить";
   }
+});
+
+backupBtn?.addEventListener("click", async () => {
+  try {
+    const result = await api("/api/backup", { method: "POST" });
+    if (lastBackup && result.lastBackup) {
+      lastBackup.textContent = new Date(result.lastBackup).toLocaleString("ru-RU");
+    }
+    alert("Бэкап сохранён в папку data/backups");
+  } catch (err) {
+    alert("Не удалось сделать бэкап");
+  }
+});
+
+collapseAllBtn?.addEventListener("click", () => {
+  visibleItems().forEach((item) => state.collapsed.add(groupKeyOf(item)));
+  renderTable();
+});
+
+expandAllBtn?.addEventListener("click", () => {
+  state.collapsed = new Set();
+  renderTable();
 });
 
 searchInput.addEventListener("input", (event) => {
@@ -1200,6 +1379,8 @@ editorForm.addEventListener("submit", async (event) => {
 drawerClose.addEventListener("click", closeDrawer);
 drawerCancel.addEventListener("click", closeDrawer);
 editCounterpartyName?.addEventListener("input", updateCounterpartySuggestions);
+editCounterpartyName?.addEventListener("focus", updateCounterpartySuggestions);
+editCounterpartyInn?.addEventListener("focus", updateCounterpartySuggestions);
 editCounterpartyInn?.addEventListener("input", () => {
   editCounterpartyInn.value = editCounterpartyInn.value.replace(/\D/g, "");
   updateCounterpartySuggestions();

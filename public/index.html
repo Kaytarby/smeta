@@ -26,9 +26,7 @@
           <button type="submit">Войти</button>
           <div id="loginError" class="error"></div>
         </form>
-        <div class="login-hint">
-          Админ по умолчанию: <strong>admin@example.com</strong> / <strong>admin</strong>
-        </div>
+        <div class="login-hint">Локальная сеть, без интернета. Работает, пока включён компьютер с программой.</div>
       </div>
     </div>
 
@@ -46,15 +44,20 @@
       </header>
 
       <main class="layout">
+        <div id="hostBanner" class="host-banner hidden"></div>
         <section class="controls">
           <div class="control-row">
             <button id="newRowBtn">Новая строка</button>
             <button id="importBtn" class="ghost">Загрузить из Excel</button>
             <button id="exportBtn" class="ghost">Экспорт в Excel</button>
             <button id="mondayBtn" class="ghost admin-only">Понедельник: запустить</button>
+            <button id="backupBtn" class="ghost admin-only">Бэкап сейчас</button>
+            <button id="collapseAllBtn" class="ghost">Свернуть группы</button>
+            <button id="expandAllBtn" class="ghost">Развернуть</button>
           </div>
           <div class="control-row meta">
             <div>Последний ночной запуск: <span id="lastRun">—</span></div>
+            <div>Бэкап: <span id="lastBackup">—</span></div>
             <div class="search">
               <input id="searchInput" type="search" placeholder="Поиск по статье, контрагенту, менеджеру" />
             </div>
@@ -76,7 +79,9 @@
         </section>
 
         <section class="table-section">
-          <div id="table" class="table"></div>
+          <div class="table-wrap">
+            <table id="table" class="plan-table"></table>
+          </div>
         </section>
 
         <section class="report-section">
