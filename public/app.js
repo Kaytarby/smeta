@@ -1051,7 +1051,8 @@ function renderHostBanner() {
   }
   hostBanner.classList.remove("hidden");
   const urls = (info.urls || []).filter((url) => !url.includes("127.0.0.1") && !url.includes("169.254."));
-  const share = urls[0] || (info.urls || [])[0] || "";
+  const share = urls[0] || "";
+  const local = (info.urls || [])[0] || `http://127.0.0.1:${info.port || 3000}`;
   hostBanner.innerHTML = "";
 
   const icon = document.createElement("div");
@@ -1060,10 +1061,13 @@ function renderHostBanner() {
 
   const text = document.createElement("div");
   text.className = "host-text";
-  text.innerHTML = `<strong>Общая база на этом компьютере (${escapeHtml(info.hostName || "хост")}).</strong>
-    Пока он выключен, коллеги не зайдут. Этот же адрес открывают в браузере в той же сети: ${
-      share ? `<code>${escapeHtml(share)}</code>` : `<code>порт ${escapeHtml(info.port || 3000)}</code>`
-    }`;
+  text.innerHTML = share
+    ? `<strong>Общая база на этом компьютере (${escapeHtml(info.hostName || "хост")}).</strong>
+       Пока он выключен, коллеги не зайдут. Этот же адрес открывают в браузере в той же Wi‑Fi/сети:
+       <code>${escapeHtml(share)}</code>`
+    : `<strong>Общая база на этом компьютере (${escapeHtml(info.hostName || "хост")}).</strong>
+       Пока он выключен, коллеги не зайдут. Адрес для коллег появится, когда компьютер будет в Wi‑Fi
+       или офисной сети; сейчас база доступна локально: <code>${escapeHtml(local)}</code>`;
 
   const actions = document.createElement("div");
   actions.className = "host-urls";
