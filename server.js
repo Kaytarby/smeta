@@ -11,6 +11,9 @@ import { Store, migrateJsonStore, ensureDefaultAdmin, rotateBackups } from "./li
 import {
   ALLOWED_STATUSES,
   alreadyRanThisWeek,
+  extractSessionToken,
+  isSecureRequest,
+  sessionCookieOptions,
   buildExportRows,
   buildWeekHeaders,
   calculateBudgetUsage,
@@ -95,18 +98,28 @@ function backupNow() {
 backupNow();
 
 const app = express();
+// Работаем и напрямую (http://IP:3000 в локальной сети), и за HTTPS‑прокси/превью:
+// важно для определения схемы запроса (Secure/SameSite cookie).
+app.set("trust proxy", true);
 app.use(express.json({ limit: "10mb" }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, "public")));
 
-function cookieOptions() {
-  return {
-    httpOnly: true,
-    sameSite: "lax",
-    path: "/",
-    maxAge: 1000 * 60 * 60 * 8
-  };
-}
+/** Короткий журнал запросов: видно, доходит ли браузер до сервера и каким путём авторизуется. */
+app.use((req, res, next) => {
+  if (/\.(css|js|svg|png|ico|map)$/.test(req.path)) return next();
+  const started = Date.now();
+  res.on("finish", () => {
+    const auth = req.headers.authorization ? "bearer" : req.cookies?.session ? "cookie" : "нет";
+    const who = req.user?.email ? ` ${req.user.email}` : "";
+    const url = req.originalUrl.replace(/([?&]token=)[^&]*/i, "$1…");
+    console.log(
+      `[${new Date().toLocaleTimeString("ru-RU")}] ${req.method} ${url} → ${res.statusCode} (${Date.now() - started} мс, вход: ${auth}${who})`
+    );
+  });
+  next();
+});
+
+app.use(express.static(path.join(__dirname, "public")));
 
 function getUserByEmail(email) {
   return store.getUserByEmail(email);
@@ -114,7 +127,7 @@ function getUserByEmail(email) {
 
 function requireAuth() {
   return async (req, res, next) => {
-    const token = req.cookies.session;
+    const token = extractSessionToken(req);
     if (!token) return res.status(401).json({ error: "UNAUTHORIZED" });
     const email = verifySession(token, SESSION_SECRET);
     if (!email) return res.status(401).json({ error: "UNAUTHORIZED" });
@@ -262,12 +275,15 @@ app.post("/api/login", async (req, res) => {
     return res.status(401).json({ error: "INVALID_CREDENTIALS" });
   }
   const token = signSession(user.email, SESSION_SECRET);
-  res.cookie("session", token, cookieOptions());
-  res.json({ email: user.email, role: user.role });
+  res.cookie("session", token, sessionCookieOptions(req));
+  // Токен отдаём и в теле ответа: если браузер блокирует cookie в стороннем фрейме,
+  // клиент сохранит его и будет присылать заголовком Authorization.
+  res.json({ email: user.email, role: user.role, token });
 });
 
 app.post("/api/logout", (req, res) => {
   res.clearCookie("session", { path: "/" });
+  res.clearCookie("session", { path: "/", sameSite: "none", secure: true });
   res.json({ ok: true });
 });
 

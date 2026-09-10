@@ -123,6 +123,265 @@ const backupBtn = el("backupBtn");
 const collapseAllBtn = el("collapseAllBtn");
 const expandAllBtn = el("expandAllBtn");
 
+/* ---------- Новые узлы оформления (сводка, навигация, тосты) ---------- */
+
+const saveStatus = el("saveStatus");
+const saveStatusText = el("saveStatusText");
+const userAvatar = el("userAvatar");
+const rowCount = el("rowCount");
+const navRowCount = el("navRowCount");
+const sidebarMeta = el("sidebarMeta");
+const dbName = el("dbName");
+const toastEl = el("toast");
+const helpModal = el("helpModal");
+const helpOpen = el("helpOpen");
+const helpClose = el("helpClose");
+const helpOk = el("helpOk");
+const tipImport = el("tipImport");
+const footerHelp = el("footerHelp");
+
+const kpiTotalValue = el("kpiTotalValue");
+const kpiTotalTrend = el("kpiTotalTrend");
+const kpiTotalNote = el("kpiTotalNote");
+const kpiTotalSpark = el("kpiTotalSpark");
+const kpiWeekLabel = el("kpiWeekLabel");
+const kpiWeekValue = el("kpiWeekValue");
+const kpiWeekTrend = el("kpiWeekTrend");
+const kpiWeekNote = el("kpiWeekNote");
+const kpiWeekSpark = el("kpiWeekSpark");
+const kpiRowsValue = el("kpiRowsValue");
+const kpiRowsTrend = el("kpiRowsTrend");
+const kpiRowsNote = el("kpiRowsNote");
+const kpiRowsChip = el("kpiRowsChip");
+const kpiLimitValue = el("kpiLimitValue");
+const kpiLimitTrend = el("kpiLimitTrend");
+const kpiLimitNote = el("kpiLimitNote");
+const kpiLimitSpark = el("kpiLimitSpark");
+
+const ICONS = {
+  ok: '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7.4" stroke="currentColor" stroke-width="1.6"/><path d="M6.8 10.3l2.1 2.1 4.3-4.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  error: '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 6.2v4.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="10" cy="13.6" r=".9" fill="currentColor"/><path d="M8.6 3.2 2.9 13.2a1.6 1.6 0 0 0 1.4 2.4h11.4a1.6 1.6 0 0 0 1.4-2.4L11.4 3.2a1.6 1.6 0 0 0-2.8 0Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  save: '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 2.6v9.2M6.6 8.4 10 11.8l3.4-3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.6 15.6h12.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  host: '<svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><rect x="3.2" y="4.2" width="13.6" height="8.6" rx="2.2" stroke="currentColor" stroke-width="1.5"/><path d="M7.4 16.2h5.2M10 12.8v3.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M6.4 8.5h3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>',
+  copy: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.6" y="5.6" width="7.4" height="7.4" rx="1.8" stroke="currentColor" stroke-width="1.4"/><path d="M10.6 5.6V4.4c0-1-.8-1.8-1.8-1.8H4.4c-1 0-1.8.8-1.8 1.8v4.4c0 1 .8 1.8 1.8 1.8h1.2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+  check: '<svg viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M3.4 8.4l3 3 6.2-6.8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+};
+
+const TREND_PATHS = {
+  up: "M2.5 8.5 9 4M9 4H5.4M9 4v3.6",
+  down: "M2.5 4 9 8.5M9 8.5H5.4M9 8.5V4.9",
+  flat: "M2.5 6.4h7"
+};
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[char]);
+}
+
+let toastTimer = null;
+
+function toast(message, kind = "ok") {
+  if (!toastEl) return;
+  toastEl.className = kind === "error" ? "toast error" : "toast";
+  toastEl.innerHTML = `${kind === "error" ? ICONS.error : ICONS.ok}<span>${escapeHtml(message)}</span>`;
+  requestAnimationFrame(() => toastEl.classList.add("show"));
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toastEl.classList.remove("show"), kind === "error" ? 5200 : 3400);
+}
+
+let saveStatusTimer = null;
+
+function setSaveStatus(kind, text) {
+  if (!saveStatus) return;
+  saveStatus.classList.toggle("busy", kind === "busy");
+  saveStatus.classList.toggle("error", kind === "error");
+  if (saveStatusText) saveStatusText.textContent = text || "Данные в базе";
+  clearTimeout(saveStatusTimer);
+  if (kind === "ok") {
+    saveStatusTimer = setTimeout(() => {
+      saveStatus.classList.remove("busy", "error");
+      if (saveStatusText) saveStatusText.textContent = "Данные в базе";
+    }, 2600);
+  }
+}
+
+function setButtonLabel(button, text) {
+  if (!button) return;
+  const label = button.querySelector(".btn-label");
+  if (label) label.textContent = text;
+  else button.textContent = text;
+}
+
+function initialsOf(email) {
+  const name = String(email || "").split("@")[0];
+  const parts = name.split(/[._\-+]+/).filter(Boolean);
+  const initials = `${parts[0]?.[0] || ""}${parts[1]?.[0] || ""}`.toUpperCase();
+  return initials || "—";
+}
+
+function weeklyTotals(items) {
+  const totals = Array(WEEK_COUNT).fill(0);
+  items.forEach((item) => {
+    normalizeWeeks(item.weeks).forEach((value, idx) => {
+      totals[idx] += parseNumber(value);
+    });
+  });
+  return totals;
+}
+
+function sparkline(values) {
+  const width = 51;
+  const height = 26;
+  const pad = 3;
+  const data = values.length > 1 ? values : [0, 0];
+  const max = Math.max(...data, 1);
+  const min = Math.min(...data, 0);
+  const span = max - min || 1;
+  const step = (width - pad * 2) / Math.max(data.length - 1, 1);
+  const points = data.map((value, idx) => [
+    pad + idx * step,
+    height - pad - ((value - min) / span) * (height - pad * 2)
+  ]);
+  const line = points
+    .map(([x, y], idx) => `${idx === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`)
+    .join(" ");
+  const area = `${line} L${points[points.length - 1][0].toFixed(1)} ${height} L${points[0][0].toFixed(1)} ${height} Z`;
+  return `<path d="${area}" fill="currentColor" fill-opacity="0.12"/><path d="${line}" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+}
+
+function setTrend(node, text, direction = "flat") {
+  if (!node) return;
+  const svg = node.querySelector("svg");
+  if (svg) {
+    const path = svg.querySelector("path");
+    if (path) path.setAttribute("d", TREND_PATHS[direction] || TREND_PATHS.flat);
+  }
+  const label = node.querySelector(".trend-text");
+  if (label) label.textContent = text;
+  node.classList.toggle("negative", direction === "down");
+  node.classList.toggle("neutral", direction === "flat");
+}
+
+function percentDelta(current, base) {
+  if (!base) return null;
+  return Math.round(((current - base) / base) * 100);
+}
+
+function renderMetrics() {
+  const items = state.items || [];
+  const totals = weeklyTotals(items);
+  const totalPlan = totals.reduce((sum, value) => sum + value, 0);
+  const labels = weekLabels();
+
+  if (kpiTotalValue) {
+    kpiTotalValue.innerHTML = `${formatNumber(totalPlan) || "0"} <span class="currency">₽</span>`;
+  }
+  const approved = items.filter((item) => item.status === "Утверждено").length;
+  const approvedShare = items.length ? Math.round((approved / items.length) * 100) : 0;
+  setTrend(
+    kpiTotalTrend,
+    `утверждено ${approved} из ${items.length || 0}`,
+    items.length === 0 ? "flat" : approved === items.length ? "up" : approved === 0 ? "down" : "flat"
+  );
+  if (kpiTotalNote) kpiTotalNote.textContent = `${WEEK_COUNT} недель · ${items.length} строк`;
+  if (kpiTotalSpark) {
+    kpiTotalSpark.innerHTML = sparkline(totals);
+    kpiTotalSpark.setAttribute("aria-label", `Суммы по неделям, всего ${formatNumber(totalPlan) || 0} рублей`);
+  }
+
+  const weekValue = totals[0] || 0;
+  const average = totalPlan / WEEK_COUNT;
+  const weekDelta = percentDelta(weekValue, Math.round(average));
+  if (kpiWeekLabel) kpiWeekLabel.textContent = `Неделя ${labels[0]}`;
+  if (kpiWeekValue) {
+    kpiWeekValue.innerHTML = `${formatNumber(weekValue) || "0"} <span class="currency">₽</span>`;
+  }
+  setTrend(
+    kpiWeekTrend,
+    weekDelta === null ? "нет данных" : `${weekDelta > 0 ? "+" : ""}${weekDelta}% к средней`,
+    weekDelta === null || weekDelta === 0 ? "flat" : weekDelta > 0 ? "up" : "down"
+  );
+  if (kpiWeekNote) kpiWeekNote.textContent = `средняя ${formatNumber(Math.round(average)) || 0} ₽`;
+  if (kpiWeekSpark) kpiWeekSpark.innerHTML = sparkline(totals.slice(0, 6));
+
+  const counterparties = new Set(items.map((item) => item.counterpartyName).filter(Boolean)).size;
+  const articles = new Set(items.map((item) => item.article).filter(Boolean)).size;
+  const drafts = items.filter((item) => item.status === "Черновик").length;
+  if (kpiRowsValue) kpiRowsValue.innerHTML = `${items.length}`;
+  setTrend(kpiRowsTrend, `${counterparties} контрагентов`, counterparties ? "up" : "flat");
+  if (kpiRowsNote) kpiRowsNote.textContent = drafts ? `${drafts} черновиков` : `статей: ${articles}`;
+  if (kpiRowsChip) kpiRowsChip.textContent = `статей: ${articles} · менеджеров: ${new Set(items.map((item) => item.manager).filter(Boolean)).size}`;
+
+  const usage = state.reportUsage && state.reportUsage.length ? state.reportUsage : state.budgetUsage || [];
+  const limitTotal = usage.reduce((sum, item) => sum + (item.limit || 0), 0);
+  const usedTotal = usage.reduce((sum, item) => sum + (item.used || 0), 0);
+  if (!usage.length || !limitTotal) {
+    if (kpiLimitValue) kpiLimitValue.textContent = "—";
+    setTrend(kpiLimitTrend, "лимиты не заданы", "flat");
+    if (kpiLimitNote) kpiLimitNote.textContent = "раздел «Администрирование»";
+    if (kpiLimitSpark) kpiLimitSpark.innerHTML = "";
+  } else {
+    const percent = Math.round((usedTotal / limitTotal) * 100);
+    const remaining = limitTotal - usedTotal;
+    if (kpiLimitValue) {
+      kpiLimitValue.innerHTML = `${percent} <span class="currency">%</span>`;
+    }
+    setTrend(
+      kpiLimitTrend,
+      `${remaining < 0 ? "перерасход " : "осталось "}${formatNumber(Math.abs(remaining)) || 0} ₽`,
+      remaining < 0 ? "down" : "up"
+    );
+    if (kpiLimitNote) {
+      const month = monthLabel(state.reportMonth || getCurrentMonth());
+      kpiLimitNote.textContent = `${month} · ${formatNumber(usedTotal) || 0} из ${formatNumber(limitTotal) || 0} ₽`;
+    }
+    if (kpiLimitSpark) {
+      kpiLimitSpark.innerHTML = sparkline(usage.map((item) => Math.round((item.percent || 0) * 100)));
+    }
+  }
+
+  if (sidebarMeta) {
+    sidebarMeta.textContent = `${items.length} строк · ${articles} статьи · ${counterparties} контрагентов`;
+  }
+  if (navRowCount) navRowCount.textContent = String(items.length);
+  if (rowCount) rowCount.textContent = `${visibleItems().length} строк`;
+}
+
+/** Скачивание файла с сервера с учётом токена: fetch → blob → <a download>. */
+async function downloadFile(url, fallbackName) {
+  try {
+    const res = await fetch(url, { headers: authHeaders() });
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = /filename\*?=(?:UTF-8''|")?([^";]+)/i.exec(disposition);
+    let name = fallbackName;
+    if (match) {
+      try {
+        name = decodeURIComponent(match[1].replace(/"/g, "").trim());
+      } catch {
+        name = match[1];
+      }
+    }
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 5000);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function showLogin() {
   loginView.classList.remove("hidden");
   appView.classList.add("hidden");
@@ -174,13 +433,84 @@ function getCurrentMonth() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+/* ---------- Токен сессии ----------
+   В локальной сети хватает cookie. В превью (HTTPS‑фрейм) браузер может
+   блокировать cookie как сторонние — тогда работаем по токену из ответа
+   /api/login и заголовку Authorization. Хранилище выбирается по доступности:
+   localStorage → sessionStorage → память вкладки. */
+
+const TOKEN_KEY = "operplan.token";
+const memoryStore = {};
+
+function storageGet(key) {
+  if (memoryStore[key] !== undefined) return memoryStore[key];
+  try {
+    const value = localStorage.getItem(key);
+    if (value !== null) return value;
+  } catch {
+    /* хранилище недоступно (песочница фрейма) */
+  }
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function storageSet(key, value) {
+  memoryStore[key] = value;
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* игнорируем */
+  }
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    /* игнорируем */
+  }
+}
+
+function storageRemove(key) {
+  delete memoryStore[key];
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    /* игнорируем */
+  }
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    /* игнорируем */
+  }
+}
+
+let authToken = storageGet(TOKEN_KEY) || "";
+
+function authHeaders(extra = {}) {
+  return authToken ? { ...extra, Authorization: `Bearer ${authToken}` } : { ...extra };
+}
+
+function forgetSession() {
+  authToken = "";
+  storageRemove(TOKEN_KEY);
+}
+
 async function api(path, options = {}) {
+  const tokenUsed = authToken;
   const res = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
-    ...options
+    ...options,
+    headers: authHeaders({ "Content-Type": "application/json", ...(options.headers || {}) })
   });
   if (res.status === 401) {
-    showLogin();
+    // 401 от самого входа — это «неверный пароль», сессию трогать не нужно.
+    // И не затираем токен, который мог появиться, пока этот запрос летел:
+    // проверочный /api/me может вернуться уже после успешного входа.
+    const staleResponse = tokenUsed !== authToken;
+    if (path !== "/api/login" && !staleResponse) {
+      forgetSession();
+      showLogin();
+    }
     throw new Error("UNAUTHORIZED");
   }
   if (!res.ok) {
@@ -368,12 +698,30 @@ function updateBudgetCard(article) {
   budgetFill.style.background = usage.remaining < 0 ? "var(--danger)" : "var(--accent)";
 }
 
+function monthLabel(month) {
+  if (!month) return "";
+  const [year, mon] = String(month).split("-").map(Number);
+  if (!year || !mon) return String(month);
+  const name = new Intl.DateTimeFormat("ru-RU", { month: "long" }).format(new Date(year, mon - 1, 1));
+  return `${name} ${year}`;
+}
+
+/** Месяц для отчёта: выбранный, иначе текущий, иначе самый свежий месяц с лимитами. */
+function defaultReportMonth() {
+  const months = [...new Set((state.limits || []).map((limit) => limit.month))].filter(Boolean).sort();
+  const current = getCurrentMonth();
+  if (!months.length) return current;
+  if (months.includes(current)) return current;
+  if (state.reportMonth && months.includes(state.reportMonth)) return state.reportMonth;
+  return months[months.length - 1];
+}
+
 async function refreshBudgetUsage() {
   try {
     const response = await api("/api/budget-usage");
     state.budgetUsage = response.usage || [];
     updateBudgetCard(editArticle?.value?.trim() || "");
-    await fetchReport(state.reportMonth || getCurrentMonth());
+    await fetchReport(state.reportMonth || defaultReportMonth());
   } catch (err) {
     // ignore
   }
@@ -383,7 +731,8 @@ function renderReport() {
   if (!reportTable) return;
   const usage = state.reportUsage || [];
   if (usage.length === 0) {
-    reportTable.innerHTML = "<div class=\"status\">Нет лимитов на выбранный месяц.</div>";
+    reportTable.innerHTML =
+      '<div class="table-empty">На выбранный месяц лимиты не заданы.<br />Задайте их в разделе «Администрирование» — тогда здесь появится сравнение факта с лимитом.</div>';
     reportSummary.textContent = "";
     return;
   }
@@ -391,9 +740,14 @@ function renderReport() {
   const totalLimit = usage.reduce((sum, item) => sum + (item.limit || 0), 0);
   const totalUsed = usage.reduce((sum, item) => sum + (item.used || 0), 0);
   const totalRemaining = totalLimit - totalUsed;
-  reportSummary.textContent = `Лимит: ${formatNumber(totalLimit) || "0"} · Использовано: ${
-    formatNumber(totalUsed) || "0"
-  } · Осталось: ${formatNumber(totalRemaining) || "0"}`;
+  const totalPercent = totalLimit ? Math.round((totalUsed / totalLimit) * 100) : 0;
+  reportSummary.innerHTML = `
+    <span class="source-chip">лимит ${formatNumber(totalLimit) || "0"} ₽</span>
+    <span class="source-chip">факт ${formatNumber(totalUsed) || "0"} ₽</span>
+    <span class="trend${totalRemaining < 0 ? " negative" : ""}">
+      <span class="trend-text">${totalRemaining < 0 ? "перерасход" : "осталось"} ${formatNumber(Math.abs(totalRemaining)) || "0"} ₽</span>
+    </span>
+    <span class="trend neutral"><span class="trend-text">${totalPercent}% лимита</span></span>`;
 
   const table = document.createElement("table");
   const thead = document.createElement("thead");
@@ -450,6 +804,7 @@ async function fetchReport(month) {
     state.reportMonth = response.month || value;
     if (reportMonth) reportMonth.value = state.reportMonth;
     renderReport();
+    renderMetrics();
   } catch (err) {
     reportTable.innerHTML = "<div class=\"status\">Не удалось загрузить отчёт</div>";
   }
@@ -705,6 +1060,7 @@ async function saveWeekValue(item, idx, value) {
   const prev = weeks[idx];
   if (prev === value) return;
   weeks[idx] = value;
+  setSaveStatus("busy", "Сохранение…");
   try {
     const response = await api(`/api/items/${item.id}`, {
       method: "PUT",
@@ -715,9 +1071,13 @@ async function saveWeekValue(item, idx, value) {
     const local = state.items.find((row) => row.id === item.id);
     if (local) local.weeks = normalizeWeeks(response.item.weeks);
     updateGroupTotalCell(groupKeyOf(item), idx, value - old);
+    setSaveStatus("ok", "Неделя сохранена");
+    renderMetrics();
     refreshBudgetUsage();
   } catch (err) {
     console.error(err);
+    setSaveStatus("error", "Не сохранено");
+    toast(`Не удалось сохранить неделю: ${err.message || "ошибка сервера"}`, "error");
   }
 }
 
@@ -785,39 +1145,60 @@ function startWeekEdit(td) {
 function renderHostBanner() {
   if (!hostBanner) return;
   const info = state.runtime;
-  if (!info) {
+  const hidden = sessionStorage.getItem("operplan.hideHostBanner") === "1";
+  if (!info || hidden) {
     hostBanner.classList.add("hidden");
     return;
   }
   hostBanner.classList.remove("hidden");
-  const urls = (info.urls || []).filter((url) => !url.includes("127.0.0.1"));
-  const share = urls[0] || (info.urls || [])[0] || "";
+  const urls = (info.urls || []).filter((url) => !url.includes("127.0.0.1") && !url.includes("169.254."));
+  const share = urls[0] || "";
+  const local = (info.urls || [])[0] || `http://127.0.0.1:${info.port || 3000}`;
   hostBanner.innerHTML = "";
+
+  const icon = document.createElement("div");
+  icon.className = "host-icon";
+  icon.innerHTML = ICONS.host;
+
   const text = document.createElement("div");
-  text.innerHTML = `<strong>Общая база на этом компьютере (${info.hostName || "хост"}).</strong> Пока ноутбук выключен, коллеги не зайдут. Откройте в браузере в той же Wi‑Fi/сети: `;
-  if (share) {
-    const code = document.createElement("code");
-    code.textContent = share;
-    text.appendChild(code);
-  }
+  text.className = "host-text";
+  text.innerHTML = share
+    ? `<strong>Общая база на этом компьютере (${escapeHtml(info.hostName || "хост")}).</strong>
+       Пока он выключен, коллеги не зайдут. Этот же адрес открывают в браузере в той же Wi‑Fi/сети:
+       <code>${escapeHtml(share)}</code>`
+    : `<strong>Общая база на этом компьютере (${escapeHtml(info.hostName || "хост")}).</strong>
+       Пока он выключен, коллеги не зайдут. Адрес для коллег появится, когда компьютер будет в Wi‑Fi
+       или офисной сети; сейчас база доступна локально: <code>${escapeHtml(local)}</code>`;
+
   const actions = document.createElement("div");
   actions.className = "host-urls";
   if (share) {
     const copy = document.createElement("button");
-    copy.className = "ghost";
+    copy.className = "ghost-button";
     copy.type = "button";
-    copy.textContent = "Копировать адрес";
+    copy.innerHTML = `${ICONS.copy}<span class="btn-label">Копировать адрес</span>`;
     copy.addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(share);
-        copy.textContent = "Скопировано";
-        setTimeout(() => (copy.textContent = "Копировать адрес"), 1500);
+        setButtonLabel(copy, "Скопировано");
+        setTimeout(() => setButtonLabel(copy, "Копировать адрес"), 1600);
       } catch {
-        prompt("Скопируйте адрес для коллег:", share);
+        setButtonLabel(copy, share);
       }
     });
     actions.appendChild(copy);
   }
+  const hide = document.createElement("button");
+  hide.className = "ghost-button";
+  hide.type = "button";
+  hide.textContent = "Скрыть";
+  hide.addEventListener("click", () => {
+    sessionStorage.setItem("operplan.hideHostBanner", "1");
+    hostBanner.classList.add("hidden");
+  });
+  actions.appendChild(hide);
+
+  hostBanner.appendChild(icon);
   hostBanner.appendChild(text);
   hostBanner.appendChild(actions);
 }
@@ -884,6 +1265,18 @@ function renderTable() {
   const tbody = document.createElement("tbody");
   const colCount = headers.length;
 
+  if (groups.length === 0) {
+    const emptyRow = document.createElement("tr");
+    const emptyCell = document.createElement("td");
+    emptyCell.className = "table-empty";
+    emptyCell.colSpan = colCount;
+    emptyCell.innerHTML = state.search.trim()
+      ? `По запросу «${escapeHtml(state.search.trim())}» ничего не найдено. Очистите поиск, чтобы вернуть все строки.`
+      : "Строк пока нет. Нажмите «Новая строка» или загрузите файл Excel — данные появятся здесь.";
+    emptyRow.appendChild(emptyCell);
+    tbody.appendChild(emptyRow);
+  }
+
   groups.forEach((group) => {
     const collapsed = state.collapsed.has(group.key);
     const groupRow = document.createElement("tr");
@@ -918,6 +1311,7 @@ function renderTable() {
       const isDebt = item.paymentType === "Погашение кредиторской задолженности";
       const tr = document.createElement("tr");
       tr.dataset.id = item.id;
+      if (state.selectedIds.has(item.id)) tr.classList.add("selected");
 
       if (isAdmin) {
         const selectCell = document.createElement("td");
@@ -929,6 +1323,7 @@ function renderTable() {
         checkbox.addEventListener("change", () => {
           if (checkbox.checked) state.selectedIds.add(item.id);
           else state.selectedIds.delete(item.id);
+          tr.classList.toggle("selected", checkbox.checked);
           updateSelectionUI();
         });
         selectCell.appendChild(checkbox);
@@ -1014,6 +1409,7 @@ function renderTable() {
 
   tableEl.appendChild(tbody);
   updateSelectionUI();
+  renderMetrics();
 }
 
 function openDrawer(item) {
@@ -1073,16 +1469,27 @@ function closeDrawer() {
 async function handleLogin(event) {
   event.preventDefault();
   loginError.textContent = "";
+  const button = loginForm.querySelector("button[type=submit]");
+  if (button) button.disabled = true;
   try {
     const email = el("loginEmail").value.trim();
     const password = el("loginPassword").value;
-    await api("/api/login", {
+    const response = await api("/api/login", {
       method: "POST",
       body: JSON.stringify({ email, password })
     });
+    if (response?.token) {
+      authToken = response.token;
+      storageSet(TOKEN_KEY, response.token);
+    } else {
+      forgetSession();
+    }
     await bootstrap();
   } catch (err) {
-    loginError.textContent = "Неверные данные входа";
+    if (err.message === "UNAUTHORIZED") loginError.textContent = "Неверный email или пароль";
+    else loginError.textContent = `Не удалось войти: ${err.message || "ошибка связи с сервером"}`;
+  } finally {
+    if (button) button.disabled = false;
   }
 }
 
@@ -1118,16 +1525,19 @@ async function bootstrap() {
     showApp();
     userEmail.textContent = state.user.email;
     userRole.textContent = state.user.role;
-    state.reportMonth = state.reportMonth || getCurrentMonth();
+    if (userAvatar) userAvatar.textContent = initialsOf(state.user.email);
+    setSaveStatus("ok", "Данные в базе");
+    state.reportMonth = state.reportMonth || defaultReportMonth();
     if (reportMonth) reportMonth.value = state.reportMonth;
     const labels = weekLabels();
-    weekSubtitle.textContent = `Текущий диапазон: ${labels[0]} — ${labels[labels.length - 1]}`;
+    if (weekSubtitle) weekSubtitle.textContent = `${labels[0]} — ${labels[labels.length - 1]}`;
     lastRun.textContent = state.meta.lastMondayRun ? new Date(state.meta.lastMondayRun).toLocaleString("ru-RU") : "—";
     if (lastBackup) {
       lastBackup.textContent = state.meta.lastBackup ? new Date(state.meta.lastBackup).toLocaleString("ru-RU") : "—";
     }
     try {
       state.runtime = await api("/api/runtime");
+      if (dbName && state.runtime?.dbFile) dbName.textContent = state.runtime.dbFile;
     } catch {
       state.runtime = null;
     }
@@ -1137,7 +1547,7 @@ async function bootstrap() {
     renderAdminLists();
     renderImportErrors();
     renderTable();
-    await fetchReport(state.reportMonth || getCurrentMonth());
+    await fetchReport(state.reportMonth || defaultReportMonth());
   } catch (err) {
     showLogin();
   }
@@ -1145,30 +1555,44 @@ async function bootstrap() {
 
 loginForm.addEventListener("submit", handleLogin);
 logoutBtn.addEventListener("click", async () => {
-  await api("/api/logout", { method: "POST" });
+  try {
+    await api("/api/logout", { method: "POST" });
+  } catch {
+    /* даже если запрос не прошёл — выходим локально */
+  }
+  forgetSession();
   showLogin();
 });
 
 newRowBtn.addEventListener("click", () => openDrawer(null));
 
-exportBtn.addEventListener("click", () => {
+exportBtn.addEventListener("click", async () => {
+  const done = await downloadFile("/api/export", "Смета.xlsx");
+  if (done) {
+    setSaveStatus("ok", "Файл выгружен");
+    toast("Excel‑файл сметы скачан");
+    return;
+  }
+  // запасной путь: обычная ссылка (работает, когда cookie доступны)
   window.location.href = "/api/export";
 });
 
 mondayBtn.addEventListener("click", async () => {
+  const ok = confirm("Сдвинуть недели: крайняя неделя уйдёт в архив. Продолжить?");
+  if (!ok) return;
   mondayBtn.disabled = true;
-  mondayBtn.textContent = "Запуск...";
+  setButtonLabel(mondayBtn, "Запуск…");
   try {
     const result = await api("/api/process/monday", { method: "POST" });
     lastRun.textContent = new Date().toLocaleString("ru-RU");
-    alert(`Готово. Архивировано строк: ${result.archivedCount}. Файл: ${result.filePath}`);
+    toast(`Сдвиг недель выполнен. В архив ушло строк: ${result.archivedCount}. Файл: ${result.filePath}`);
     await fetchAll();
     renderTable();
   } catch (err) {
-    alert("Ошибка запуска");
+    toast("Не удалось выполнить сдвиг недель", "error");
   } finally {
     mondayBtn.disabled = false;
-    mondayBtn.textContent = "Понедельник: запустить";
+    setButtonLabel(mondayBtn, "Понедельник: запустить");
   }
 });
 
@@ -1178,9 +1602,9 @@ backupBtn?.addEventListener("click", async () => {
     if (lastBackup && result.lastBackup) {
       lastBackup.textContent = new Date(result.lastBackup).toLocaleString("ru-RU");
     }
-    alert("Бэкап сохранён в папку data/backups");
+    toast("Бэкап сохранён в папку data/backups");
   } catch (err) {
-    alert("Не удалось сделать бэкап");
+    toast("Не удалось сделать бэкап", "error");
   }
 });
 
@@ -1266,7 +1690,7 @@ importCommit?.addEventListener("click", async () => {
 bulkSetStatus?.addEventListener("click", async () => {
   const status = bulkStatus?.value;
   if (!status) {
-    alert("Выберите статус");
+    toast("Сначала выберите статус", "error");
     return;
   }
   const ids = Array.from(state.selectedIds);
@@ -1281,14 +1705,14 @@ bulkSetStatus?.addEventListener("click", async () => {
     bulkStatus.value = "";
     renderTable();
   } catch (err) {
-    alert("Ошибка массового обновления");
+    toast("Не удалось применить изменения к выбранным строкам", "error");
   }
 });
 
 bulkSetManager?.addEventListener("click", async () => {
   const manager = bulkManager?.value.trim();
   if (!manager) {
-    alert("Введите email менеджера");
+    toast("Введите email менеджера", "error");
     return;
   }
   const ids = Array.from(state.selectedIds);
@@ -1303,7 +1727,7 @@ bulkSetManager?.addEventListener("click", async () => {
     bulkManager.value = "";
     renderTable();
   } catch (err) {
-    alert("Ошибка массового обновления");
+    toast("Не удалось применить изменения к выбранным строкам", "error");
   }
 });
 
@@ -1323,7 +1747,7 @@ bulkDelete?.addEventListener("click", async () => {
     await refreshBudgetUsage();
     renderTable();
   } catch (err) {
-    alert("Ошибка удаления");
+    toast("Не удалось удалить выбранные строки", "error");
   }
 });
 
@@ -1351,6 +1775,7 @@ editorForm.addEventListener("submit", async (event) => {
     payload.manager = state.user?.email || "";
   }
 
+  setSaveStatus("busy", "Сохранение…");
   try {
     let response;
     if (state.editing?.id) {
@@ -1371,8 +1796,12 @@ editorForm.addEventListener("submit", async (event) => {
     await refreshBudgetUsage();
     renderTable();
     closeDrawer();
+    setSaveStatus("ok", "Строка сохранена");
+    toast(state.editing?.id ? "Строка обновлена" : "Строка добавлена");
   } catch (err) {
     editorStatus.textContent = "Ошибка сохранения";
+    setSaveStatus("error", "Не сохранено");
+    toast(`Строку не удалось сохранить: ${err.message || "ошибка сервера"}`, "error");
   }
 });
 
@@ -1518,6 +1947,87 @@ addCounterpartyForm?.addEventListener("submit", async (event) => {
   } catch (err) {
     counterpartyStatus.textContent = "Ошибка";
   }
+});
+
+/* ---------- Разделы в сайдбаре, помощь, клавиатура ---------- */
+
+const navButtons = Array.from(document.querySelectorAll(".nav-item[data-target]"));
+
+function setActiveNav(active) {
+  navButtons.forEach((btn) => btn.classList.toggle("active", btn === active));
+}
+
+navButtons.forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const target = document.getElementById(btn.dataset.target);
+    if (!target) return;
+    setActiveNav(btn);
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+});
+
+const navSections = navButtons
+  .map((btn) => ({ btn, section: document.getElementById(btn.dataset.target) }))
+  .filter((entry) => entry.section);
+
+if ("IntersectionObserver" in window && navSections.length > 1) {
+  const observer = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const hit = navSections.find((item) => item.section === entry.target);
+        if (hit) setActiveNav(hit.btn);
+      });
+    },
+    { rootMargin: "-96px 0px -65% 0px", threshold: 0 }
+  );
+  navSections.forEach((entry) => observer.observe(entry.section));
+}
+
+function openHelp() {
+  helpModal?.classList.remove("hidden");
+}
+
+function closeHelp() {
+  helpModal?.classList.add("hidden");
+}
+
+helpOpen?.addEventListener("click", openHelp);
+footerHelp?.addEventListener("click", openHelp);
+helpClose?.addEventListener("click", closeHelp);
+helpOk?.addEventListener("click", closeHelp);
+helpModal?.addEventListener("click", (event) => {
+  if (event.target === helpModal) closeHelp();
+});
+
+tipImport?.addEventListener("click", openImportModal);
+
+// Ссылка на шаблон: качаем с токеном, иначе — обычный переход по ссылке.
+el("templateLink")?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  const done = await downloadFile("/api/template", "Шаблон_импорта.xlsx");
+  if (!done) window.location.href = "/api/template";
+});
+
+drawer.addEventListener("click", (event) => {
+  if (event.target === drawer) closeDrawer();
+});
+
+importModal?.addEventListener("click", (event) => {
+  if (event.target === importModal) closeImportModal();
+});
+
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  if (!drawer.classList.contains("hidden")) {
+    closeDrawer();
+    return;
+  }
+  if (importModal && !importModal.classList.contains("hidden")) {
+    closeImportModal();
+    return;
+  }
+  if (helpModal && !helpModal.classList.contains("hidden")) closeHelp();
 });
 
 bootstrap();

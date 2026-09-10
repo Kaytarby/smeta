@@ -10,8 +10,11 @@ import {
   canEditFields,
   counterpartyExists,
   ensureArrayLength,
+  extractSessionToken,
   getMonthKey,
+  isSecureRequest,
   normalizeInn,
+  sessionCookieOptions,
   shiftItemsForMonday,
   signSession,
   verifySession
@@ -132,4 +135,41 @@ test("миграция JSON в SQLite и чтение строки", () => {
   const again = migrateJsonStore(store, { users: [], items: [] });
   assert.equal(again.migrated, false);
   store.close();
+});
+
+test("в локальной сети cookie сессии — SameSite=Lax без Secure", () => {
+  const options = sessionCookieOptions({ headers: {}, secure: false });
+  assert.equal(options.sameSite, "lax");
+  assert.equal(options.secure, undefined);
+  assert.equal(options.httpOnly, true);
+});
+
+test("за HTTPS-прокси cookie сессии — SameSite=None и Secure (иначе вход не проходит во фрейме)", () => {
+  const options = sessionCookieOptions({ headers: { "x-forwarded-proto": "https" }, secure: false });
+  assert.equal(options.sameSite, "none");
+  assert.equal(options.secure, true);
+});
+
+test("x-forwarded-proto распознаётся даже со списком протоколов", () => {
+  assert.equal(isSecureRequest({ headers: { "x-forwarded-proto": "https, http" }, secure: false }), true);
+  assert.equal(isSecureRequest({ headers: { "x-forwarded-proto": "http" }, secure: false }), false);
+  assert.equal(isSecureRequest({ headers: {}, secure: true }), true);
+});
+
+test("токен сессии берётся из cookie или из заголовка Bearer", () => {
+  assert.equal(extractSessionToken({ headers: {}, cookies: { session: "abc" } }), "abc");
+  assert.equal(extractSessionToken({ headers: { authorization: "Bearer xyz" }, cookies: {} }), "xyz");
+  assert.equal(extractSessionToken({ headers: { authorization: "bearer  xyz " }, cookies: {} }), "xyz");
+  assert.equal(extractSessionToken({ headers: { authorization: "Basic xyz" }, cookies: { session: "abc" } }), "abc");
+  assert.equal(extractSessionToken({ headers: {}, cookies: {} }), "");
+  assert.equal(extractSessionToken(null), "");
+});
+
+test("токен из заголовка работает так же, как из cookie", () => {
+  const secret = "test-secret";
+  const token = signSession("manager@example.com", secret);
+  const fromBearer = extractSessionToken({ headers: { authorization: `Bearer ${token}` }, cookies: {} });
+  const fromCookie = extractSessionToken({ headers: {}, cookies: { session: token } });
+  assert.equal(verifySession(fromBearer, secret), "manager@example.com");
+  assert.equal(verifySession(fromCookie, secret), "manager@example.com");
 });
