@@ -352,6 +352,36 @@ function renderMetrics() {
   if (rowCount) rowCount.textContent = `${visibleItems().length} строк`;
 }
 
+/** Скачивание файла с сервера с учётом токена: fetch → blob → <a download>. */
+async function downloadFile(url, fallbackName) {
+  try {
+    const res = await fetch(url, { headers: authHeaders() });
+    if (!res.ok) return false;
+    const blob = await res.blob();
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = /filename\*?=(?:UTF-8''|")?([^";]+)/i.exec(disposition);
+    let name = fallbackName;
+    if (match) {
+      try {
+        name = decodeURIComponent(match[1].replace(/"/g, "").trim());
+      } catch {
+        name = match[1];
+      }
+    }
+    const href = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = href;
+    link.download = name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(href), 5000);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function showLogin() {
   loginView.classList.remove("hidden");
   appView.classList.add("hidden");
@@ -403,13 +433,84 @@ function getCurrentMonth() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
+/* ---------- Токен сессии ----------
+   В локальной сети хватает cookie. В превью (HTTPS‑фрейм) браузер может
+   блокировать cookie как сторонние — тогда работаем по токену из ответа
+   /api/login и заголовку Authorization. Хранилище выбирается по доступности:
+   localStorage → sessionStorage → память вкладки. */
+
+const TOKEN_KEY = "operplan.token";
+const memoryStore = {};
+
+function storageGet(key) {
+  if (memoryStore[key] !== undefined) return memoryStore[key];
+  try {
+    const value = localStorage.getItem(key);
+    if (value !== null) return value;
+  } catch {
+    /* хранилище недоступно (песочница фрейма) */
+  }
+  try {
+    return sessionStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function storageSet(key, value) {
+  memoryStore[key] = value;
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* игнорируем */
+  }
+  try {
+    sessionStorage.setItem(key, value);
+  } catch {
+    /* игнорируем */
+  }
+}
+
+function storageRemove(key) {
+  delete memoryStore[key];
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    /* игнорируем */
+  }
+  try {
+    sessionStorage.removeItem(key);
+  } catch {
+    /* игнорируем */
+  }
+}
+
+let authToken = storageGet(TOKEN_KEY) || "";
+
+function authHeaders(extra = {}) {
+  return authToken ? { ...extra, Authorization: `Bearer ${authToken}` } : { ...extra };
+}
+
+function forgetSession() {
+  authToken = "";
+  storageRemove(TOKEN_KEY);
+}
+
 async function api(path, options = {}) {
+  const tokenUsed = authToken;
   const res = await fetch(path, {
-    headers: { "Content-Type": "application/json" },
-    ...options
+    ...options,
+    headers: authHeaders({ "Content-Type": "application/json", ...(options.headers || {}) })
   });
   if (res.status === 401) {
-    showLogin();
+    // 401 от самого входа — это «неверный пароль», сессию трогать не нужно.
+    // И не затираем токен, который мог появиться, пока этот запрос летел:
+    // проверочный /api/me может вернуться уже после успешного входа.
+    const staleResponse = tokenUsed !== authToken;
+    if (path !== "/api/login" && !staleResponse) {
+      forgetSession();
+      showLogin();
+    }
     throw new Error("UNAUTHORIZED");
   }
   if (!res.ok) {
@@ -1368,16 +1469,27 @@ function closeDrawer() {
 async function handleLogin(event) {
   event.preventDefault();
   loginError.textContent = "";
+  const button = loginForm.querySelector("button[type=submit]");
+  if (button) button.disabled = true;
   try {
     const email = el("loginEmail").value.trim();
     const password = el("loginPassword").value;
-    await api("/api/login", {
+    const response = await api("/api/login", {
       method: "POST",
       body: JSON.stringify({ email, password })
     });
+    if (response?.token) {
+      authToken = response.token;
+      storageSet(TOKEN_KEY, response.token);
+    } else {
+      forgetSession();
+    }
     await bootstrap();
   } catch (err) {
-    loginError.textContent = "Неверные данные входа";
+    if (err.message === "UNAUTHORIZED") loginError.textContent = "Неверный email или пароль";
+    else loginError.textContent = `Не удалось войти: ${err.message || "ошибка связи с сервером"}`;
+  } finally {
+    if (button) button.disabled = false;
   }
 }
 
@@ -1443,13 +1555,25 @@ async function bootstrap() {
 
 loginForm.addEventListener("submit", handleLogin);
 logoutBtn.addEventListener("click", async () => {
-  await api("/api/logout", { method: "POST" });
+  try {
+    await api("/api/logout", { method: "POST" });
+  } catch {
+    /* даже если запрос не прошёл — выходим локально */
+  }
+  forgetSession();
   showLogin();
 });
 
 newRowBtn.addEventListener("click", () => openDrawer(null));
 
-exportBtn.addEventListener("click", () => {
+exportBtn.addEventListener("click", async () => {
+  const done = await downloadFile("/api/export", "Смета.xlsx");
+  if (done) {
+    setSaveStatus("ok", "Файл выгружен");
+    toast("Excel‑файл сметы скачан");
+    return;
+  }
+  // запасной путь: обычная ссылка (работает, когда cookie доступны)
   window.location.href = "/api/export";
 });
 
@@ -1877,6 +2001,13 @@ helpModal?.addEventListener("click", (event) => {
 });
 
 tipImport?.addEventListener("click", openImportModal);
+
+// Ссылка на шаблон: качаем с токеном, иначе — обычный переход по ссылке.
+el("templateLink")?.addEventListener("click", async (event) => {
+  event.preventDefault();
+  const done = await downloadFile("/api/template", "Шаблон_импорта.xlsx");
+  if (!done) window.location.href = "/api/template";
+});
 
 drawer.addEventListener("click", (event) => {
   if (event.target === drawer) closeDrawer();
