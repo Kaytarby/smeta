@@ -1,12 +1,16 @@
 {
   "name": "operplan",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Desktop web app alternative to AppSheet for 10-week rolling budget (Оперплан).",
+  "description": "LAN web app for 10-week rolling budget (Оперплан). One Node process, SQLite, no internet.",
   "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node --test test/*.test.js"
   },
   "dependencies": {
     "cookie-parser": "^1.4.6",

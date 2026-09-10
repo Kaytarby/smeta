@@ -1,5 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Fraunces:wght@500;600;700&display=swap");
-
 :root {
   --bg: #f4f7f1;
   --panel: #ffffff;
@@ -21,7 +19,7 @@
 
 body {
   margin: 0;
-  font-family: "Manrope", "Segoe UI", sans-serif;
+  font-family: "Segoe UI", system-ui, sans-serif;
   color: var(--ink);
   background: radial-gradient(circle at top left, #e3f4e6, transparent 55%),
     radial-gradient(circle at bottom right, #d5efe0, transparent 45%),
@@ -86,7 +84,7 @@ body {
 }
 
 .login-card h1 {
-  font-family: "Fraunces", serif;
+  font-family: Georgia, "Times New Roman", serif;
   font-size: 30px;
   margin: 16px 0 10px;
 }
@@ -179,7 +177,7 @@ button.ghost.danger {
 }
 
 .title {
-  font-family: "Fraunces", serif;
+  font-family: Georgia, "Times New Roman", serif;
   font-size: 28px;
 }
 
@@ -254,12 +252,164 @@ button.ghost.danger {
   overflow: hidden;
 }
 
-.table {
-  display: grid;
-  grid-template-columns: repeat(18, minmax(120px, auto));
-  gap: 0;
-  overflow-x: auto;
-  padding-bottom: 12px;
+.table-wrap {
+  overflow: auto;
+  max-height: calc(100vh - 260px);
+  border: 1px solid #e2efe6;
+  border-radius: 12px;
+}
+
+.plan-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.plan-table th,
+.plan-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #edf3ee;
+  border-right: 1px solid #edf3ee;
+  white-space: nowrap;
+  background: #fff;
+  vertical-align: middle;
+}
+
+.plan-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background: #f5fbf6;
+  font-weight: 600;
+  text-align: left;
+}
+
+.plan-table th.sticky-check,
+.plan-table td.sticky-check {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  width: 44px;
+  min-width: 44px;
+  background: #fff;
+}
+
+.plan-table thead th.sticky-check {
+  z-index: 6;
+  background: #f5fbf6;
+}
+
+.plan-table th.sticky-cp,
+.plan-table td.sticky-cp {
+  position: sticky;
+  z-index: 3;
+  background: #fff;
+  min-width: 180px;
+  max-width: 260px;
+  white-space: normal;
+}
+
+.plan-table.with-check th.sticky-cp,
+.plan-table.with-check td.sticky-cp {
+  left: 44px;
+}
+
+.plan-table:not(.with-check) th.sticky-cp,
+.plan-table:not(.with-check) td.sticky-cp {
+  left: 0;
+}
+
+.plan-table thead th.sticky-cp {
+  z-index: 6;
+  background: #f5fbf6;
+}
+
+.plan-table tr.group td {
+  background: #f0f7f2;
+  font-weight: 600;
+  color: #3f5a46;
+  cursor: pointer;
+}
+
+.plan-table tr.group td.sticky-cp,
+.plan-table tr.group td.sticky-check {
+  background: #f0f7f2;
+}
+
+.plan-table .debt {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.plan-table .status-draft {
+  color: #2f7a46;
+}
+
+.plan-table .actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.plan-table td.week {
+  min-width: 92px;
+  text-align: right;
+  cursor: text;
+}
+
+.plan-table td.week:focus,
+.plan-table td.week.editing {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.plan-table td.week input {
+  width: 88px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  border: 1px solid #d7e6da;
+  text-align: right;
+}
+
+.plan-table td.week[data-locked="1"] {
+  cursor: default;
+  color: #92a096;
+  background: #f7faf7;
+}
+
+.cp-inn {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.host-banner {
+  background: #fff7e8;
+  border: 1px solid #f0d9a6;
+  color: #5c4a20;
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.host-banner code {
+  background: #fff;
+  padding: 2px 6px;
+  border-radius: 6px;
+}
+
+.host-urls {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
 }
 
 .cell {
@@ -267,49 +417,6 @@ button.ghost.danger {
   border-bottom: 1px solid #edf3ee;
   border-right: 1px solid #edf3ee;
   font-size: 13px;
-}
-
-.cell.header {
-  position: sticky;
-  top: 0;
-  background: #f5fbf6;
-  font-weight: 600;
-  z-index: 2;
-}
-
-.cell.group {
-  background: #f0f7f2;
-  font-weight: 600;
-  color: #3f5a46;
-}
-
-.cell.debt {
-  color: var(--danger);
-  font-weight: 600;
-}
-
-.cell.status-draft {
-  color: var(--accent-2);
-}
-
-.cell.actions {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-
-.cell input[type="number"],
-.cell input[type="text"] {
-  width: 100%;
-  padding: 6px 8px;
-  border-radius: 8px;
-  border: 1px solid #d7e6da;
-  background: #fff;
-}
-
-.cell input[disabled] {
-  background: #f4f7f3;
-  color: #92a096;
 }
 
 .admin-section .panel {
@@ -400,7 +507,7 @@ button.ghost.danger {
 
 .panel h2 {
   margin-top: 0;
-  font-family: "Fraunces", serif;
+  font-family: Georgia, "Times New Roman", serif;
 }
 
 .panel h3 {
@@ -695,9 +802,7 @@ textarea {
     padding: 20px;
   }
 
-  .table {
-    grid-template-columns: repeat(18, minmax(140px, auto));
-  }
+  .table-wrap { max-height: 70vh; }
 }
 
 @media (prefers-reduced-motion: reduce) {
